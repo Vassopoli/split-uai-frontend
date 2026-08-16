@@ -21,6 +21,30 @@
   --color-owed-50: #eefcf6;
   --color-owed-500: #1ca583;
   --color-owed-600: #12876c;
+
+  /* Categorical palette for expense categories — fixed hue order, one slot
+     per ExpenseCategory. Validated for CVD separation and contrast against
+     this app's card surfaces (see dataviz color checks); don't reorder or
+     add ad-hoc hues, extend by folding a new category into "other". */
+  --color-cat-food: #2a78d6;
+  --color-cat-transport: #eb6834;
+  --color-cat-home: #1baf7a;
+  --color-cat-leisure: #eda100;
+  --color-cat-shopping: #e87ba4;
+  --color-cat-trip: #008300;
+  --color-cat-other: #4a3aa7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-cat-food: #3987e5;
+    --color-cat-transport: #d95926;
+    --color-cat-home: #199e70;
+    --color-cat-leisure: #c98500;
+    --color-cat-shopping: #d55181;
+    --color-cat-trip: #008300;
+    --color-cat-other: #9085e9;
+  }
 }
 
 :root {

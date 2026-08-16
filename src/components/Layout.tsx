@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { Camera, Plus, UserPlus, Wallet } from 'lucide-react'
+import { BarChart3, Camera, Plus, UserPlus, Wallet } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { Avatar } from './Avatar'
 import { Button } from './Button'
@@ -58,6 +58,12 @@ export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
             </TabLink>
           )
         })}
+        <TabLink to="/stats">
+          <span className="flex items-center gap-1.5">
+            <BarChart3 size={15} />
+            Gráficos
+          </span>
+        </TabLink>
         <TabLink to="/invites">
           <span className="flex items-center gap-1.5">
             <UserPlus size={15} />

@@ -6,10 +6,11 @@ interface AvatarProps {
   initials: string
   color: string
   picture?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
 }
 
 const SIZES: Record<NonNullable<AvatarProps['size']>, string> = {
+  xs: 'h-5 w-5 text-[9px]',
   sm: 'h-8 w-8 text-xs',
   md: 'h-10 w-10 text-sm',
   lg: 'h-14 w-14 text-lg',

@@ -4,7 +4,7 @@ import type { Friend } from '../types'
 import type { ScanReceiptItem } from '../lib/api'
 import { Modal } from './Modal'
 import { Button } from './Button'
-import { Avatar } from './Avatar'
+import { Avatar, MeAvatar } from './Avatar'
 import { formatBRL, round2 } from '../lib/balance'
 
 interface ItemRow {
@@ -150,12 +150,29 @@ export function ItemizeExpenseModal({
         <p className="text-sm text-[#4b4655] dark:text-gray-300">
           {isMeStep
             ? 'Marque os itens que são seus. Se um item é dos dois, marque nas duas telas — a gente divide.'
-            : `Agora marque os itens que são de ${friend.name.split(' ')[0]}.`}
+            : `Agora marque os itens que são de ${friend.name.split(' ')[0]}. Nenhum item pode ficar sem dono.`}
         </p>
+
+        {!isMeStep && (
+          <p
+            className={`rounded-lg border px-3 py-2 text-xs ${
+              canConfirm
+                ? 'border-emerald-400/60 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-900/15 dark:text-emerald-300'
+                : 'border-amber-400/60 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-900/15 dark:text-amber-300'
+            }`}
+          >
+            {canConfirm
+              ? 'Todos os itens já têm dono. ✓'
+              : `Ainda falta marcar: ${unassigned.map((r) => r.label).join(', ')}`}
+          </p>
+        )}
 
         <div className="space-y-1.5">
           {rows.map((r) => {
             const checked = !!selection[r.key]
+            const isMine = !!mine[r.key]
+            const isTheirs = !!theirs[r.key]
+            const needsAttention = !isMeStep && !isMine && !isTheirs
             return (
               <button
                 key={r.key}
@@ -164,7 +181,9 @@ export function ItemizeExpenseModal({
                 className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
                   checked
                     ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-200'
-                    : 'border-black/10 text-[#4b4655] hover:bg-black/[0.03] dark:border-white/15 dark:text-gray-300'
+                    : needsAttention
+                      ? 'border-amber-400 bg-amber-50/60 text-[#4b4655] dark:border-amber-500/50 dark:bg-amber-900/10 dark:text-gray-300'
+                      : 'border-black/10 text-[#4b4655] hover:bg-black/[0.03] dark:border-white/15 dark:text-gray-300'
                 }`}
               >
                 <span className="flex min-w-0 items-center gap-2">
@@ -179,18 +198,33 @@ export function ItemizeExpenseModal({
                   </span>
                   <span className="truncate">{r.label}</span>
                 </span>
-                <span className="shrink-0 font-medium">{formatBRL(r.amount)}</span>
+                <span className="flex shrink-0 items-center gap-2">
+                  {(isMine || isTheirs) && (
+                    <span className="flex items-center -space-x-1.5">
+                      {isMine && (
+                        <span className="rounded-full ring-2 ring-white dark:ring-[#161b18]">
+                          <MeAvatar size="xs" />
+                        </span>
+                      )}
+                      {isTheirs && (
+                        <span className="rounded-full ring-2 ring-white dark:ring-[#161b18]">
+                          <Avatar
+                            name={friend.name}
+                            initials={friend.initials}
+                            color={friend.color}
+                            picture={friend.picture}
+                            size="xs"
+                          />
+                        </span>
+                      )}
+                    </span>
+                  )}
+                  <span className="font-medium">{formatBRL(r.amount)}</span>
+                </span>
               </button>
             )
           })}
         </div>
-
-        {!isMeStep && !canConfirm && (
-          <p className="text-xs text-owe-600">
-            Marque quem ficou com {unassigned.length > 1 ? 'esses itens' : 'esse item'} antes de
-            confirmar.
-          </p>
-        )}
 
         <div className="flex items-center justify-between gap-2 pt-2">
           {canGoBack ? (
