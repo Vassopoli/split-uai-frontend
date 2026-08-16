@@ -37,19 +37,18 @@ export function SplitEditor({
     initial && amount ? round2((initial.friendShare / amount) * 100).toString() : '50',
   )
 
-  // seed exact fields with an equal split whenever the amount changes —
-  // skipped on the first run when `initial` was given, so editing an
-  // existing expense doesn't stomp its saved split on mount
-  const skipNextReseed = useRef(!!initial)
+  // seed exact fields with an equal split whenever the amount actually
+  // changes — compares against the last amount we seeded for (not "is this
+  // the first effect run") so it stays correct under StrictMode's double
+  // effect invocation in dev, and doesn't stomp a saved split (`initial`)
+  // on mount
+  const lastSeededAmount = useRef(amount)
   useEffect(() => {
-    if (skipNextReseed.current) {
-      skipNextReseed.current = false
-      return
-    }
+    if (amount === lastSeededAmount.current) return
+    lastSeededAmount.current = amount
     const half = round2(amount / 2)
     setMyExact(half ? half.toFixed(2) : '')
     setFriendExact(amount ? round2(amount - half).toFixed(2) : '')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount])
 
   const result: SplitResult = useMemo(() => {
