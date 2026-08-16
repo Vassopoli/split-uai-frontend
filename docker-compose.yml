@@ -19,7 +19,7 @@ services:
       # token no compose. Via SSH, o BuildKit usa o agente do host (mesma
       # chave que já autentica o `git push` deste repo), sem segredo nenhum
       # aqui.
-      context: git@github.com:Vassopoli/split-uai-backend.git
+      context: git@github.com:Vassopoli/split-uai-backend.git#main
       ssh:
         - default
     container_name: split-uai-backend
