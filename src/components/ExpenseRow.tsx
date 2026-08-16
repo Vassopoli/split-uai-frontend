@@ -5,7 +5,7 @@ import { CategoryIcon } from './CategoryIcon'
 import { formatBRL } from '../lib/balance'
 import { parseLocalDate } from '../lib/date'
 
-const SPLIT_LABELS: Record<Expense['splitType'], string> = {
+export const SPLIT_LABELS: Record<Expense['splitType'], string> = {
   equal: 'Dividido igualmente',
   exact: 'Dividido por valor',
   percentage: 'Dividido por porcentagem',

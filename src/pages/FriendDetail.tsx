@@ -1,21 +1,29 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useOutletContext, useParams } from 'react-router-dom'
-import { Plus, HandCoins } from 'lucide-react'
+import { Plus, HandCoins, Download } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { Card } from '../components/Card'
 import { Avatar } from '../components/Avatar'
 import { Button } from '../components/Button'
 import { Modal } from '../components/Modal'
 import { ActivityList } from '../components/ActivityList'
+import { AuditLogList } from '../components/AuditLogList'
 import { balanceFromResponse, describeBalance, formatBRL, round2 } from '../lib/balance'
 import { todayLocalISODate } from '../lib/date'
+import { exportFriendActivityCsv } from '../lib/csvExport'
 import * as api from '../lib/api'
-import type { ActivityItem, FriendBalance } from '../types'
+import type { ActivityItem, AuditLogEntry, FriendBalance } from '../types'
 import type { LayoutContext } from './layoutContext'
+
+type Tab = 'historico' | 'atividades'
 
 export function FriendDetail() {
   const { friendId } = useParams<{ friendId: string }>()
   const { openAddExpense } = useOutletContext<LayoutContext>()
+  const [tab, setTab] = useState<Tab>('historico')
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[] | null>(null)
+  const [auditLoading, setAuditLoading] = useState(false)
+  const [auditError, setAuditError] = useState<string | null>(null)
   const [confirmingSettle, setConfirmingSettle] = useState(false)
   const [settlePreview, setSettlePreview] = useState<FriendBalance | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -53,6 +61,22 @@ export function FriendDetail() {
     ],
     [friendExpenses, friendSettlements],
   )
+
+  useEffect(() => {
+    setAuditLog(null)
+    setAuditError(null)
+  }, [friendId])
+
+  useEffect(() => {
+    if (tab !== 'atividades' || !friendId || auditLog !== null || auditLoading) return
+    setAuditLoading(true)
+    setAuditError(null)
+    api
+      .fetchActivityLog(friendId)
+      .then(setAuditLog)
+      .catch((err) => setAuditError(err instanceof Error ? err.message : 'Erro ao buscar atividades.'))
+      .finally(() => setAuditLoading(false))
+  }, [tab, friendId, auditLog, auditLoading])
 
   if (!friends.length) return null
   if (!friend || !friendId) return <Navigate to="/" replace />
@@ -144,6 +168,16 @@ export function FriendDetail() {
           >
             <Plus size={16} /> Despesa
           </Button>
+          {activity.length > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              onClick={() => exportFriendActivityCsv(friendExpenses, friendSettlements, friend)}
+            >
+              <Download size={16} /> Exportar CSV
+            </Button>
+          )}
           {balance.net !== 0 && (
             <Button
               size="sm"
@@ -157,15 +191,50 @@ export function FriendDetail() {
       </Card>
 
       <div>
-        <h2 className="mb-2 px-1 text-sm font-semibold text-[#12251f] dark:text-white">
-          Histórico com {firstName}
-        </h2>
+        <div className="mb-2 flex items-center justify-between px-1">
+          <h2 className="text-sm font-semibold text-[#12251f] dark:text-white">
+            {tab === 'historico' ? `Histórico com ${firstName}` : `Atividades com ${firstName}`}
+          </h2>
+          <div className="flex gap-1">
+            {(
+              [
+                { value: 'historico' as const, label: 'Histórico' },
+                { value: 'atividades' as const, label: 'Atividades' },
+              ]
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setTab(opt.value)}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
+                  tab === opt.value
+                    ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-200'
+                    : 'border-black/10 text-[#4b4655] hover:bg-black/[0.03] dark:border-white/15 dark:text-gray-300'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <Card className="overflow-hidden">
-          <ActivityList
-            items={activity}
-            friendsById={{ [friend.id]: friend }}
-            emptyMessage={`Nenhuma despesa com ${firstName} ainda.`}
-          />
+          {tab === 'historico' ? (
+            <ActivityList
+              items={activity}
+              friendsById={{ [friend.id]: friend }}
+              emptyMessage={`Nenhuma despesa com ${firstName} ainda.`}
+            />
+          ) : auditLoading ? (
+            <p className="px-5 py-10 text-center text-sm text-[#8a8593]">Carregando atividades...</p>
+          ) : auditError ? (
+            <p className="px-5 py-10 text-center text-sm text-owe-600">{auditError}</p>
+          ) : (
+            <AuditLogList
+              entries={auditLog ?? []}
+              friendsById={{ [friend.id]: friend }}
+              emptyMessage={`Nenhuma atividade com ${firstName} ainda.`}
+            />
+          )}
         </Card>
       </div>
 

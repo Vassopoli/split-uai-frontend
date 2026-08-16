@@ -1,4 +1,4 @@
-import type { BalanceDirection, Expense, Friend, FriendInvite, Settlement } from '../types'
+import type { AuditLogEntry, BalanceDirection, Expense, Friend, FriendInvite, Settlement } from '../types'
 import { getAccessToken } from './authToken'
 
 /**
@@ -99,6 +99,11 @@ export async function fetchExpenses(friendId?: string): Promise<Expense[]> {
 export async function fetchSettlements(friendId?: string): Promise<Settlement[]> {
   const query = friendId ? `?friendId=${encodeURIComponent(friendId)}` : ''
   return request<Settlement[]>(`/settlements${query}`)
+}
+
+export async function fetchActivityLog(friendId?: string): Promise<AuditLogEntry[]> {
+  const query = friendId ? `?friendId=${encodeURIComponent(friendId)}` : ''
+  return request<AuditLogEntry[]>(`/activity-log${query}`)
 }
 
 export interface CreateExpenseInput {

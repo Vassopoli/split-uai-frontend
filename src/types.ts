@@ -68,6 +68,31 @@ export interface FriendBalance {
   net: number
 }
 
+export type AuditAction = 'created' | 'updated' | 'deleted'
+export type AuditEntityType = 'expense' | 'settlement'
+
+export interface AuditChange {
+  field: 'description' | 'category' | 'amount' | 'paidBy' | 'splitType' | 'myShare' | 'friendShare' | 'date'
+  from: string | number
+  to: string | number
+}
+
+export interface AuditLogEntry {
+  id: string
+  friendId: string
+  entityType: AuditEntityType
+  entityId: string
+  action: AuditAction
+  /** who performed the action, relative to the caller — same vocabulary as Expense.paidBy */
+  actor: 'me' | 'friend'
+  occurredAt: string // ISO datetime
+  /** snapshot of the entity right after the action (or right before, for 'deleted') — lets the UI render something meaningful even once the entity itself is gone */
+  description: string
+  amount: number
+  /** only present for action === 'updated'; one entry per field that actually changed */
+  changes?: AuditChange[]
+}
+
 export type InviteDirection = 'sent' | 'received'
 
 export interface FriendInvite {
