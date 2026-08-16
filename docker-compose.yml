@@ -12,3 +12,26 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-8081}:80"
+
+  backend:
+    build:
+      # split-uai-backend é privado — clonar por HTTPS exigiria embutir um
+      # token no compose. Via SSH, o BuildKit usa o agente do host (mesma
+      # chave que já autentica o `git push` deste repo), sem segredo nenhum
+      # aqui.
+      context: git@github.com:Vassopoli/split-uai-backend.git
+      ssh:
+        - default
+    container_name: split-uai-backend
+    restart: unless-stopped
+    environment:
+      PORT: 8080
+      # MariaDB roda fora do Docker (Synology na LAN) — só aponta pra lá.
+      DB_DSN: ${DB_DSN}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
