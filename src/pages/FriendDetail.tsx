@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useOutletContext, useParams } from 'react-router-dom'
-import { Plus, HandCoins, Download } from 'lucide-react'
+import { Plus, HandCoins, Download, Search } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { Card } from '../components/Card'
 import { Avatar } from '../components/Avatar'
@@ -8,19 +8,22 @@ import { Button } from '../components/Button'
 import { Modal } from '../components/Modal'
 import { ActivityList } from '../components/ActivityList'
 import { AuditLogList } from '../components/AuditLogList'
+import { FriendCharts } from '../components/FriendCharts'
 import { balanceFromResponse, describeBalance, formatBRL, round2 } from '../lib/balance'
 import { todayLocalISODate } from '../lib/date'
 import { exportFriendActivityCsv } from '../lib/csvExport'
+import { normalizeForSearch } from '../lib/text'
 import * as api from '../lib/api'
 import type { ActivityItem, AuditLogEntry, FriendBalance } from '../types'
 import type { LayoutContext } from './layoutContext'
 
-type Tab = 'historico' | 'atividades'
+type Tab = 'historico' | 'atividades' | 'graficos'
 
 export function FriendDetail() {
   const { friendId } = useParams<{ friendId: string }>()
   const { openAddExpense } = useOutletContext<LayoutContext>()
   const [tab, setTab] = useState<Tab>('historico')
+  const [historySearch, setHistorySearch] = useState('')
   const [auditLog, setAuditLog] = useState<AuditLogEntry[] | null>(null)
   const [auditLoading, setAuditLoading] = useState(false)
   const [auditError, setAuditError] = useState<string | null>(null)
@@ -61,6 +64,14 @@ export function FriendDetail() {
     ],
     [friendExpenses, friendSettlements],
   )
+
+  const filteredActivity = useMemo(() => {
+    const q = normalizeForSearch(historySearch.trim())
+    if (!q) return activity
+    return activity.filter(
+      (item) => item.kind === 'expense' && normalizeForSearch(item.data.description).includes(q),
+    )
+  }, [activity, historySearch])
 
   useEffect(() => {
     setAuditLog(null)
@@ -193,13 +204,18 @@ export function FriendDetail() {
       <div>
         <div className="mb-2 flex items-center justify-between px-1">
           <h2 className="text-sm font-semibold text-[#12251f] dark:text-white">
-            {tab === 'historico' ? `Histórico com ${firstName}` : `Atividades com ${firstName}`}
+            {tab === 'historico'
+              ? `Histórico com ${firstName}`
+              : tab === 'atividades'
+                ? `Atividades com ${firstName}`
+                : `Gráficos de ${firstName}`}
           </h2>
           <div className="flex gap-1">
             {(
               [
                 { value: 'historico' as const, label: 'Histórico' },
                 { value: 'atividades' as const, label: 'Atividades' },
+                { value: 'graficos' as const, label: 'Gráficos' },
               ]
             ).map((opt) => (
               <button
@@ -217,25 +233,44 @@ export function FriendDetail() {
             ))}
           </div>
         </div>
-        <Card className="overflow-hidden">
-          {tab === 'historico' ? (
-            <ActivityList
-              items={activity}
-              friendsById={{ [friend.id]: friend }}
-              emptyMessage={`Nenhuma despesa com ${firstName} ainda.`}
+        {tab === 'historico' && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 dark:border-white/15 dark:bg-white/5">
+            <Search size={15} className="shrink-0 text-[#8a8593]" />
+            <input
+              value={historySearch}
+              onChange={(e) => setHistorySearch(e.target.value)}
+              placeholder="Buscar despesa por nome..."
+              className="w-full bg-transparent text-sm text-[#12251f] outline-none placeholder:text-[#8a8593] dark:text-white"
             />
-          ) : auditLoading ? (
-            <p className="px-5 py-10 text-center text-sm text-[#8a8593]">Carregando atividades...</p>
-          ) : auditError ? (
-            <p className="px-5 py-10 text-center text-sm text-owe-600">{auditError}</p>
-          ) : (
-            <AuditLogList
-              entries={auditLog ?? []}
-              friendsById={{ [friend.id]: friend }}
-              emptyMessage={`Nenhuma atividade com ${firstName} ainda.`}
-            />
-          )}
-        </Card>
+          </div>
+        )}
+        {tab === 'graficos' ? (
+          <FriendCharts friendId={friendId} expenses={friendExpenses} />
+        ) : (
+          <Card className="overflow-hidden">
+            {tab === 'historico' ? (
+              <ActivityList
+                items={filteredActivity}
+                friendsById={{ [friend.id]: friend }}
+                emptyMessage={
+                  historySearch
+                    ? `Nenhuma despesa encontrada para "${historySearch}".`
+                    : `Nenhuma despesa com ${firstName} ainda.`
+                }
+              />
+            ) : auditLoading ? (
+              <p className="px-5 py-10 text-center text-sm text-[#8a8593]">Carregando atividades...</p>
+            ) : auditError ? (
+              <p className="px-5 py-10 text-center text-sm text-owe-600">{auditError}</p>
+            ) : (
+              <AuditLogList
+                entries={auditLog ?? []}
+                friendsById={{ [friend.id]: friend }}
+                emptyMessage={`Nenhuma atividade com ${firstName} ainda.`}
+              />
+            )}
+          </Card>
+        )}
       </div>
 
       {confirmingSettle && (
