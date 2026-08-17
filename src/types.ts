@@ -3,11 +3,15 @@ export type SplitType = 'equal' | 'exact' | 'percentage'
 export type PaidBy = 'me' | 'friend'
 
 export type ExpenseCategory =
+  | 'groceries'
+  | 'health'
   | 'food'
   | 'transport'
   | 'home'
   | 'leisure'
   | 'shopping'
+  | 'education'
+  | 'pets'
   | 'trip'
   | 'other'
 
