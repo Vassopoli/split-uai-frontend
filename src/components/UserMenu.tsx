@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { LogOut } from 'lucide-react'
+import { Avatar } from './Avatar'
 
 export function UserMenu() {
   const { user, logout } = useAuth0()
@@ -28,16 +29,8 @@ export function UserMenu() {
 
   return (
     <div className="relative" ref={rootRef}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-brand-500 text-sm font-semibold text-white"
-        title={name}
-      >
-        {user.picture ? (
-          <img src={user.picture} alt={name} className="h-full w-full object-cover" />
-        ) : (
-          initials
-        )}
+      <button onClick={() => setOpen((v) => !v)} className="block rounded-full">
+        <Avatar name={name} initials={initials} color="#12876c" picture={user.picture} size="md" />
       </button>
 
       {open && (
