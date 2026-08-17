@@ -186,7 +186,9 @@ export function FriendDetail() {
               className="flex-1 sm:flex-none"
               onClick={() => exportFriendActivityCsv(friendExpenses, friendSettlements, friend)}
             >
-              <Download size={16} /> Exportar CSV
+              <Download size={16} />
+              <span className="sm:hidden">CSV</span>
+              <span className="hidden sm:inline">Exportar CSV</span>
             </Button>
           )}
           {balance.net !== 0 && (
@@ -195,7 +197,9 @@ export function FriendDetail() {
               className="flex-1 sm:flex-none"
               onClick={handleOpenSettle}
             >
-              <HandCoins size={16} /> Acertar contas
+              <HandCoins size={16} />
+              <span className="sm:hidden">Acertar</span>
+              <span className="hidden sm:inline">Acertar contas</span>
             </Button>
           )}
         </div>
