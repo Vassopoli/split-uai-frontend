@@ -1,19 +1,26 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, HandCoins, UserPlus } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { Card } from '../components/Card'
 import { Avatar } from '../components/Avatar'
 import { Button } from '../components/Button'
-import { ActivityList } from '../components/ActivityList'
+import { AuditLogList } from '../components/AuditLogList'
 import { describeBalance, formatBRL, overallBalance } from '../lib/balance'
-import type { ActivityItem, FriendBalance } from '../types'
+import * as api from '../lib/api'
+import type { AuditLogEntry, FriendBalance } from '../types'
+
+const RECENT_ACTIVITY_LIMIT = 10
 
 export function Dashboard() {
   const friends = useAppStore((s) => s.friends)
   const expenses = useAppStore((s) => s.expenses)
   const settlements = useAppStore((s) => s.settlements)
   const balances = useAppStore((s) => s.balances)
+
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[] | null>(null)
+  const [auditLoading, setAuditLoading] = useState(false)
+  const [auditError, setAuditError] = useState<string | null>(null)
 
   const total = overallBalance(Object.values(balances))
 
@@ -22,13 +29,28 @@ export function Dashboard() {
     [friends],
   )
 
-  const activity: ActivityItem[] = useMemo(
-    () => [
-      ...expenses.map((e) => ({ kind: 'expense' as const, data: e })),
-      ...settlements.map((s) => ({ kind: 'settlement' as const, data: s })),
-    ],
-    [expenses, settlements],
-  )
+  useEffect(() => {
+    setAuditLog(null)
+    setAuditError(null)
+  }, [expenses, settlements])
+
+  useEffect(() => {
+    if (auditLog !== null || auditLoading) return
+    setAuditLoading(true)
+    setAuditError(null)
+    api
+      .fetchActivityLog()
+      .then(setAuditLog)
+      .catch((err) => setAuditError(err instanceof Error ? err.message : 'Erro ao buscar atividades.'))
+      .finally(() => setAuditLoading(false))
+  }, [auditLog, auditLoading])
+
+  const recentActivity = useMemo(() => {
+    if (!auditLog) return []
+    return [...auditLog]
+      .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
+      .slice(0, RECENT_ACTIVITY_LIMIT)
+  }, [auditLog])
 
   return (
     <div className="space-y-6">
@@ -115,11 +137,17 @@ export function Dashboard() {
           Atividade recente
         </h2>
         <Card className="overflow-hidden">
-          <ActivityList
-            items={activity}
-            friendsById={friendsById}
-            emptyMessage="Nenhuma despesa registrada ainda."
-          />
+          {auditLoading ? (
+            <p className="px-5 py-10 text-center text-sm text-[#8a8593]">Carregando atividades...</p>
+          ) : auditError ? (
+            <p className="px-5 py-10 text-center text-sm text-owe-600">{auditError}</p>
+          ) : (
+            <AuditLogList
+              entries={recentActivity}
+              friendsById={friendsById}
+              emptyMessage="Nenhuma atividade registrada ainda."
+            />
+          )}
         </Card>
       </div>
     </div>
