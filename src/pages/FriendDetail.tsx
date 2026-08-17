@@ -65,7 +65,7 @@ export function FriendDetail() {
   useEffect(() => {
     setAuditLog(null)
     setAuditError(null)
-  }, [friendId])
+  }, [friendId, expenses, settlements])
 
   useEffect(() => {
     if (tab !== 'atividades' || !friendId || auditLog !== null || auditLoading) return
