@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { BarChart3, Camera, Plus, UserPlus, Wallet } from 'lucide-react'
+import { Camera, Plus, UserPlus, Wallet } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { Avatar } from './Avatar'
 import { Button } from './Button'
@@ -20,18 +20,21 @@ export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white">
             <Wallet size={18} strokeWidth={2.2} />
           </div>
-          <span className="text-lg font-semibold tracking-tight text-[#12251f] dark:text-white">
+          <span className="hidden text-lg font-semibold tracking-tight text-[#12251f] dark:text-white sm:inline">
             Split Uai
           </span>
         </NavLink>
 
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={openScanReceipt}>
+          <Button size="sm" variant="secondary" onClick={openScanReceipt} title="Escanear nota fiscal">
             <Camera size={16} />
+            <span className="sm:hidden">Escanear</span>
             <span className="hidden sm:inline">Escanear nota</span>
           </Button>
           <Button size="sm" onClick={() => openAddExpense()}>
-            <Plus size={16} /> Nova despesa
+            <Plus size={16} />
+            <span className="sm:hidden">Despesa</span>
+            <span className="hidden sm:inline">Nova despesa</span>
           </Button>
           <UserMenu />
         </div>
@@ -44,26 +47,22 @@ export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
           const { tone } = describeBalance(balance.net, f.name.split(' ')[0])
           return (
             <TabLink key={f.id} to={`/friends/${f.id}`}>
-              <span className="flex items-center gap-1.5">
-                <Avatar name={f.name} initials={f.initials} color={f.color} picture={f.picture} size="sm" />
-                {f.name.split(' ')[0]}
-                {tone !== 'settled' && (
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      tone === 'owed' ? 'bg-owed-500' : 'bg-owe-500'
-                    }`}
-                  />
-                )}
-              </span>
+              {(isActive) => (
+                <span className="flex items-center gap-1.5">
+                  <Avatar name={f.name} initials={f.initials} color={f.color} picture={f.picture} size="sm" />
+                  {isActive && f.name.split(' ')[0]}
+                  {tone !== 'settled' && (
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        tone === 'owed' ? 'bg-owed-500' : 'bg-owe-500'
+                      }`}
+                    />
+                  )}
+                </span>
+              )}
             </TabLink>
           )
         })}
-        <TabLink to="/stats">
-          <span className="flex items-center gap-1.5">
-            <BarChart3 size={15} />
-            Gráficos
-          </span>
-        </TabLink>
         <TabLink to="/invites">
           <span className="flex items-center gap-1.5">
             <UserPlus size={15} />
@@ -95,7 +94,7 @@ function TabLink({
 }: {
   to: string
   label?: string
-  children?: ReactNode
+  children?: ReactNode | ((isActive: boolean) => ReactNode)
 }) {
   return (
     <NavLink
@@ -111,7 +110,7 @@ function TabLink({
     >
       {({ isActive }) => (
         <>
-          {children ?? label}
+          {typeof children === 'function' ? children(isActive) : (children ?? label)}
           {isActive && (
             <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-brand-500" />
           )}
