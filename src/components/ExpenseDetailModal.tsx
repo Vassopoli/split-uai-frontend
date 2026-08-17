@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Loader2, Pencil, Trash2 } from 'lucide-react'
 import type { Expense, ExpenseCategory, Friend } from '../types'
 import { Modal } from './Modal'
 import { Button } from './Button'
@@ -10,7 +10,8 @@ import { CATEGORY_OPTIONS, CATEGORY_LABELS, CategoryIcon } from './CategoryIcon'
 import { Avatar, MeAvatar } from './Avatar'
 import { formatBRL } from '../lib/balance'
 import { parseLocalDate } from '../lib/date'
-import type { UpdateExpenseInput } from '../lib/api'
+import type { CategorizeConfidence, UpdateExpenseInput } from '../lib/api'
+import { useAutoCategorize } from '../hooks/useAutoCategorize'
 
 const SPLIT_LABELS: Record<Expense['splitType'], string> = {
   equal: 'Dividido igualmente',
@@ -37,6 +38,8 @@ export function ExpenseDetailModal({
   const [notes, setNotes] = useState(expense.notes ?? '')
   const [amountStr, setAmountStr] = useState(expense.amount.toFixed(2).replace('.', ','))
   const [category, setCategory] = useState<ExpenseCategory>(expense.category)
+  const [categoryTouched, setCategoryTouched] = useState(false)
+  const [categorySuggestion, setCategorySuggestion] = useState<CategorizeConfidence | null>(null)
   const [paidBy, setPaidBy] = useState<'me' | 'friend'>(expense.paidBy)
   const [date, setDate] = useState(expense.date.slice(0, 10))
   const [split, setSplit] = useState<SplitResult>({
@@ -47,6 +50,15 @@ export function ExpenseDetailModal({
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { handleBlur: handleDescriptionBlur, isLoading: categorizing } = useAutoCategorize({
+    description,
+    enabled: !categoryTouched,
+    onCategorized: (suggested, confidence) => {
+      setCategory(suggested)
+      setCategorySuggestion(confidence)
+    },
+  })
 
   const amount = useMemo(() => parseFloat(amountStr.replace(',', '.')) || 0, [amountStr])
   const canSubmit = description.trim().length > 0 && amount > 0 && split.valid && !submitting
@@ -126,6 +138,7 @@ export function ExpenseDetailModal({
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              onBlur={handleDescriptionBlur}
               rows={description.includes('\n') ? 4 : 1}
               className="w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm text-[#12251f] outline-none focus:border-brand-400 dark:border-white/15 dark:bg-white/5 dark:text-white"
             />
@@ -172,15 +185,22 @@ export function ExpenseDetailModal({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[#6b6375] dark:text-gray-400">
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-[#6b6375] dark:text-gray-400">
               Categoria
+              {categorizing && <Loader2 size={12} className="animate-spin text-[#8a8593]" />}
+              {!categorizing && categorySuggestion === 'low' && !categoryTouched && (
+                <span className="font-normal text-[#8a8593]">(sugestão incerta)</span>
+              )}
             </label>
             <div className="flex flex-wrap gap-1.5">
               {CATEGORY_OPTIONS.map((c) => (
                 <button
                   key={c}
                   type="button"
-                  onClick={() => setCategory(c)}
+                  onClick={() => {
+                    setCategory(c)
+                    setCategoryTouched(true)
+                  }}
                   className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
                     category === c
                       ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-200'

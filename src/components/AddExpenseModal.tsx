@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TriangleAlert, UserPlus } from 'lucide-react'
+import { Loader2, TriangleAlert, UserPlus } from 'lucide-react'
 import type { ExpenseCategory, Friend } from '../types'
 import { Modal } from './Modal'
 import { Button } from './Button'
 import { SplitEditor, type SplitResult } from './SplitEditor'
 import { CATEGORY_OPTIONS, CATEGORY_LABELS, CategoryIcon } from './CategoryIcon'
 import { Avatar, MeAvatar } from './Avatar'
-import type { CreateExpenseInput } from '../lib/api'
+import type { CategorizeConfidence, CreateExpenseInput } from '../lib/api'
 import type { ExpenseDraft } from '../lib/receiptDraft'
 import { todayLocalISODate } from '../lib/date'
+import { useAutoCategorize } from '../hooks/useAutoCategorize'
 
 export function AddExpenseModal({
   friends,
@@ -32,6 +33,8 @@ export function AddExpenseModal({
     draft?.amount ? draft.amount.toFixed(2).replace('.', ',') : '',
   )
   const [category, setCategory] = useState<ExpenseCategory>(draft?.category ?? 'food')
+  const [categoryTouched, setCategoryTouched] = useState(false)
+  const [categorySuggestion, setCategorySuggestion] = useState<CategorizeConfidence | null>(null)
   const [paidBy, setPaidBy] = useState<'me' | 'friend'>('me')
   const [date, setDate] = useState(() => draft?.date ?? todayLocalISODate())
   const [split, setSplit] = useState<SplitResult>({
@@ -42,6 +45,15 @@ export function AddExpenseModal({
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const { handleBlur: handleDescriptionBlur, isLoading: categorizing } = useAutoCategorize({
+    description,
+    enabled: !categoryTouched,
+    onCategorized: (suggested, confidence) => {
+      setCategory(suggested)
+      setCategorySuggestion(confidence)
+    },
+  })
 
   const friend = friends.find((f) => f.id === friendId)
   const amount = useMemo(() => parseFloat(amountStr.replace(',', '.')) || 0, [amountStr])
@@ -140,6 +152,7 @@ export function AddExpenseModal({
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            onBlur={handleDescriptionBlur}
             placeholder="Ex: Jantar, aluguel, Uber..."
             rows={description.includes('\n') ? 4 : 1}
             className="w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm text-[#12251f] outline-none focus:border-brand-400 dark:border-white/15 dark:bg-white/5 dark:text-white"
@@ -189,15 +202,22 @@ export function AddExpenseModal({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-[#6b6375] dark:text-gray-400">
+          <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-[#6b6375] dark:text-gray-400">
             Categoria
+            {categorizing && <Loader2 size={12} className="animate-spin text-[#8a8593]" />}
+            {!categorizing && categorySuggestion === 'low' && !categoryTouched && (
+              <span className="font-normal text-[#8a8593]">(sugestão incerta)</span>
+            )}
           </label>
           <div className="flex flex-wrap gap-1.5">
             {CATEGORY_OPTIONS.map((c) => (
               <button
                 key={c}
                 type="button"
-                onClick={() => setCategory(c)}
+                onClick={() => {
+                  setCategory(c)
+                  setCategoryTouched(true)
+                }}
                 className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   category === c
                     ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-200'

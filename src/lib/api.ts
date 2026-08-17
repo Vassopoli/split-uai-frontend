@@ -230,6 +230,45 @@ export async function scanReceipt(receipt: Blob): Promise<ScanReceiptOutcome> {
   return { status: 'ok', data: (await res.json()) as ScanReceiptResult }
 }
 
+export type CategorizeConfidence = 'high' | 'low'
+
+export interface CategorizeExpenseResult {
+  category: Expense['category']
+  confidence: CategorizeConfidence
+}
+
+export type CategorizeExpenseOutcome =
+  | { status: 'ok'; data: CategorizeExpenseResult }
+  | { status: 'rate_limited'; retryAfterSeconds: number }
+  | { status: 'error' }
+
+/**
+ * Best-effort suggestion, never a blocking step — the caller is expected to
+ * fail silently on anything but 'ok' (same principle as scanReceipt) and
+ * never retry on 'rate_limited', since the backend allows only one call
+ * every 10s per user.
+ */
+export async function categorizeExpense(description: string): Promise<CategorizeExpenseOutcome> {
+  const token = await getAccessToken()
+
+  const res = await fetch(`${BASE_URL}/expenses/categorize`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ description }),
+  })
+
+  if (res.status === 429) {
+    const retryAfterSeconds = Number(res.headers.get('Retry-After')) || 10
+    return { status: 'rate_limited', retryAfterSeconds }
+  }
+  if (!res.ok) return { status: 'error' }
+
+  return { status: 'ok', data: (await res.json()) as CategorizeExpenseResult }
+}
+
 export interface CreatePaymentInput {
   amount: number
   date: string
