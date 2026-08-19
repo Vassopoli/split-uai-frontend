@@ -9,14 +9,10 @@ services:
       - "${PORT:-8081}:80"
 
   backend:
-    build:
-      # split-uai-backend é privado — clonar por HTTPS exigiria embutir um
-      # token no compose. Via SSH, o BuildKit usa o agente do host (mesma
-      # chave que já autentica o `git push` deste repo), sem segredo nenhum
-      # aqui.
-      context: git@github.com:Vassopoli/split-uai-backend.git#main
-      ssh:
-        - default
+    # Buildada e publicada pelo workflow do repo split-uai-backend — o
+    # Komodo só puxa a imagem pronta. Evita depender de clone Git (SSH na
+    # porta 22) durante o deploy, que ficava bloqueado no host do Komodo.
+    image: ghcr.io/vassopoli/split-uai-backend:latest
     container_name: split-uai-backend
     restart: unless-stopped
     environment:
