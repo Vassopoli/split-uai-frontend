@@ -27,6 +27,7 @@ interface AppState {
   loading: boolean
   error: string | null
   loaded: boolean
+  unreadActivityCount: number
 
   load: () => Promise<void>
   addExpense: (input: CreateExpenseInput) => Promise<void>
@@ -37,6 +38,8 @@ interface AppState {
   inviteFriend: (email: string) => Promise<InviteFriendResult>
   acceptInvite: (inviteId: string) => Promise<void>
   declineInvite: (inviteId: string) => Promise<void>
+  setUnreadActivityCount: (count: number) => void
+  markActivityRead: () => Promise<void>
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -48,6 +51,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   loading: false,
   error: null,
   loaded: false,
+  unreadActivityCount: 0,
 
   load: async () => {
     if (get().loaded || get().loading) return
@@ -166,5 +170,12 @@ export const useAppStore = create<AppState>((set, get) => ({
         received: state.invites.received.filter((i) => i.id !== inviteId),
       },
     }))
+  },
+
+  setUnreadActivityCount: (count) => set({ unreadActivityCount: count }),
+
+  markActivityRead: async () => {
+    await api.markActivityLogRead()
+    set({ unreadActivityCount: 0 })
   },
 }))

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { Camera, Plus, UserPlus, Wallet } from 'lucide-react'
+import { Camera, History, Plus, UserPlus, Wallet } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
+import { useUnreadActivityPolling } from '../hooks/useUnreadActivityPolling'
 import { Avatar } from './Avatar'
 import { Button } from './Button'
 import { UserMenu } from './UserMenu'
@@ -12,6 +13,9 @@ export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
   const friends = useAppStore((s) => s.friends)
   const balances = useAppStore((s) => s.balances)
   const receivedInvites = useAppStore((s) => s.invites.received.length)
+  const unreadActivityCount = useAppStore((s) => s.unreadActivityCount)
+
+  useUnreadActivityPolling()
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-4xl flex-col px-4 sm:px-6">
@@ -63,6 +67,17 @@ export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
             </TabLink>
           )
         })}
+        <TabLink to="/activity">
+          <span className="flex items-center gap-1.5">
+            <History size={15} />
+            Atividades
+            {unreadActivityCount > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-owe-500 px-1 text-[10px] font-semibold text-white">
+                {unreadActivityCount > 9 ? '9+' : unreadActivityCount}
+              </span>
+            )}
+          </span>
+        </TabLink>
         <TabLink to="/invites">
           <span className="flex items-center gap-1.5">
             <UserPlus size={15} />

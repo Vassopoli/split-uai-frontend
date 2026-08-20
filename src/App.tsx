@@ -5,6 +5,7 @@ import { Layout } from './components/Layout'
 import { Dashboard } from './pages/Dashboard'
 import { FriendDetail } from './pages/FriendDetail'
 import { Invites } from './pages/Invites'
+import { Activity } from './pages/Activity'
 import { LoginScreen } from './pages/LoginScreen'
 import { AddExpenseModal } from './components/AddExpenseModal'
 import { ScanReceiptModal } from './components/ScanReceiptModal'
@@ -155,6 +156,7 @@ function App() {
         <Route element={<Layout openAddExpense={openAddExpense} openScanReceipt={openScanReceipt} />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/friends/:friendId" element={<FriendDetail />} />
+          <Route path="/activity" element={<Activity />} />
           <Route path="/invites" element={<Invites />} />
         </Route>
       </Routes>

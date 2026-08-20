@@ -106,6 +106,15 @@ export async function fetchActivityLog(friendId?: string): Promise<AuditLogEntry
   return request<AuditLogEntry[]>(`/activity-log${query}`)
 }
 
+export async function fetchUnreadActivityCount(): Promise<number> {
+  const { count } = await request<{ count: number }>('/activity-log/unread-count')
+  return count
+}
+
+export async function markActivityLogRead(): Promise<void> {
+  await request<void>('/activity-log/read', { method: 'POST' })
+}
+
 export interface CreateExpenseInput {
   friendId: string
   description: string
