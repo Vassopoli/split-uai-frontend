@@ -6,12 +6,10 @@ import { useUnreadActivityPolling } from '../hooks/useUnreadActivityPolling'
 import { Avatar } from './Avatar'
 import { Button } from './Button'
 import { UserMenu } from './UserMenu'
-import { describeBalance } from '../lib/balance'
 import type { LayoutContext } from '../pages/layoutContext'
 
 export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
   const friends = useAppStore((s) => s.friends)
-  const balances = useAppStore((s) => s.balances)
   const receivedInvites = useAppStore((s) => s.invites.received.length)
   const unreadActivityCount = useAppStore((s) => s.unreadActivityCount)
 
@@ -46,27 +44,16 @@ export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
 
       <nav className="flex items-center gap-1 border-b border-black/[0.06] dark:border-white/10">
         <TabLink to="/" label="Visão geral" />
-        {friends.map((f) => {
-          const balance = balances[f.id] ?? { friendId: f.id, net: 0 }
-          const { tone } = describeBalance(balance.net, f.name.split(' ')[0])
-          return (
-            <TabLink key={f.id} to={`/friends/${f.id}`}>
-              {(isActive) => (
-                <span className="flex items-center gap-1.5">
-                  <Avatar name={f.name} initials={f.initials} color={f.color} picture={f.picture} size="sm" />
-                  {isActive && f.name.split(' ')[0]}
-                  {tone !== 'settled' && (
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        tone === 'owed' ? 'bg-owed-500' : 'bg-owe-500'
-                      }`}
-                    />
-                  )}
-                </span>
-              )}
-            </TabLink>
-          )
-        })}
+        {friends.map((f) => (
+          <TabLink key={f.id} to={`/friends/${f.id}`}>
+            {(isActive) => (
+              <span className="flex items-center gap-1.5">
+                <Avatar name={f.name} initials={f.initials} color={f.color} picture={f.picture} size="sm" />
+                {isActive && f.name.split(' ')[0]}
+              </span>
+            )}
+          </TabLink>
+        ))}
         <TabLink to="/activity">
           <span className="flex items-center gap-1.5">
             <History size={15} />
