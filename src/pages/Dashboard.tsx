@@ -1,56 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, HandCoins, UserPlus } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { Card } from '../components/Card'
 import { Avatar } from '../components/Avatar'
 import { Button } from '../components/Button'
-import { AuditLogList } from '../components/AuditLogList'
 import { describeBalance, formatBRL, overallBalance } from '../lib/balance'
-import * as api from '../lib/api'
-import type { AuditLogEntry, FriendBalance } from '../types'
-
-const RECENT_ACTIVITY_LIMIT = 10
+import type { FriendBalance } from '../types'
 
 export function Dashboard() {
   const friends = useAppStore((s) => s.friends)
-  const expenses = useAppStore((s) => s.expenses)
-  const settlements = useAppStore((s) => s.settlements)
   const balances = useAppStore((s) => s.balances)
 
-  const [auditLog, setAuditLog] = useState<AuditLogEntry[] | null>(null)
-  const [auditLoading, setAuditLoading] = useState(false)
-  const [auditError, setAuditError] = useState<string | null>(null)
-
   const total = overallBalance(Object.values(balances))
-
-  const friendsById = useMemo(
-    () => Object.fromEntries(friends.map((f) => [f.id, f])),
-    [friends],
-  )
-
-  useEffect(() => {
-    setAuditLog(null)
-    setAuditError(null)
-  }, [expenses, settlements])
-
-  useEffect(() => {
-    if (auditLog !== null || auditLoading) return
-    setAuditLoading(true)
-    setAuditError(null)
-    api
-      .fetchActivityLog()
-      .then(setAuditLog)
-      .catch((err) => setAuditError(err instanceof Error ? err.message : 'Erro ao buscar atividades.'))
-      .finally(() => setAuditLoading(false))
-  }, [auditLog, auditLoading])
-
-  const recentActivity = useMemo(() => {
-    if (!auditLog) return []
-    return [...auditLog]
-      .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-      .slice(0, RECENT_ACTIVITY_LIMIT)
-  }, [auditLog])
 
   return (
     <div className="space-y-6">
@@ -103,7 +64,7 @@ export function Dashboard() {
         <div className="grid gap-3 sm:grid-cols-2">
           {friends.map((f) => {
             const balance: FriendBalance = balances[f.id] ?? { friendId: f.id, net: 0 }
-            const { text, tone } = describeBalance(balance.net, f.name.split(' ')[0])
+            const { text, tone } = describeBalance(balance.net)
             return (
               <Link key={f.id} to={`/friends/${f.id}`}>
                 <Card className="flex items-center gap-3 p-4 transition-colors hover:border-brand-300/60 dark:hover:border-brand-400/40">
@@ -131,25 +92,6 @@ export function Dashboard() {
           })}
         </div>
       )}
-
-      <div>
-        <h2 className="mb-2 px-1 text-sm font-semibold text-[#12251f] dark:text-white">
-          Atividade recente
-        </h2>
-        <Card className="overflow-hidden">
-          {auditLoading ? (
-            <p className="px-5 py-10 text-center text-sm text-[#8a8593]">Carregando atividades...</p>
-          ) : auditError ? (
-            <p className="px-5 py-10 text-center text-sm text-owe-600">{auditError}</p>
-          ) : (
-            <AuditLogList
-              entries={recentActivity}
-              friendsById={friendsById}
-              emptyMessage="Nenhuma atividade registrada ainda."
-            />
-          )}
-        </Card>
-      </div>
     </div>
   )
 }

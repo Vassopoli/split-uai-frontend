@@ -31,13 +31,23 @@ export interface BalanceDescription {
   tone: 'owed' | 'owe' | 'settled'
 }
 
-/** net > 0: friend owes me. net < 0: I owe friend. */
-export function describeBalance(net: number, friendFirstName: string): BalanceDescription {
+/**
+ * net > 0: friend owes me. net < 0: I owe friend.
+ * Pass friendFirstName only where the name isn't already shown nearby —
+ * omit it (e.g. under a big name heading) to avoid repeating it.
+ */
+export function describeBalance(net: number, friendFirstName?: string): BalanceDescription {
   if (Math.abs(net) < 0.005) {
     return { text: 'Tudo quitado', tone: 'settled' }
   }
   if (net > 0) {
-    return { text: `${friendFirstName} te deve ${formatBRL(net)}`, tone: 'owed' }
+    return {
+      text: friendFirstName ? `${friendFirstName} te deve ${formatBRL(net)}` : `Te deve ${formatBRL(net)}`,
+      tone: 'owed',
+    }
   }
-  return { text: `Você deve ${formatBRL(net)} a ${friendFirstName}`, tone: 'owe' }
+  return {
+    text: friendFirstName ? `Você deve ${formatBRL(net)} a ${friendFirstName}` : `Você deve ${formatBRL(net)}`,
+    tone: 'owe',
+  }
 }

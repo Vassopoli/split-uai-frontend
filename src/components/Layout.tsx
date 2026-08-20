@@ -3,13 +3,11 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { Camera, History, Plus, UserPlus, Wallet } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { useUnreadActivityPolling } from '../hooks/useUnreadActivityPolling'
-import { Avatar } from './Avatar'
 import { Button } from './Button'
 import { UserMenu } from './UserMenu'
 import type { LayoutContext } from '../pages/layoutContext'
 
 export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
-  const friends = useAppStore((s) => s.friends)
   const receivedInvites = useAppStore((s) => s.invites.received.length)
   const unreadActivityCount = useAppStore((s) => s.unreadActivityCount)
 
@@ -44,16 +42,6 @@ export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
 
       <nav className="flex items-center gap-1 border-b border-black/[0.06] dark:border-white/10">
         <TabLink to="/" label="Visão geral" />
-        {friends.map((f) => (
-          <TabLink key={f.id} to={`/friends/${f.id}`}>
-            {(isActive) => (
-              <span className="flex items-center gap-1.5">
-                <Avatar name={f.name} initials={f.initials} color={f.color} picture={f.picture} size="sm" />
-                {isActive && f.name.split(' ')[0]}
-              </span>
-            )}
-          </TabLink>
-        ))}
         <TabLink to="/activity">
           <span className="flex items-center gap-1.5">
             <History size={15} />

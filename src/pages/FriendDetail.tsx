@@ -1,32 +1,28 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Navigate, useOutletContext, useParams } from 'react-router-dom'
-import { Plus, HandCoins, Download, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Link, Navigate, useOutletContext, useParams } from 'react-router-dom'
+import { ArrowLeft, Plus, HandCoins, Download, Search } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { Card } from '../components/Card'
 import { Avatar } from '../components/Avatar'
 import { Button } from '../components/Button'
 import { Modal } from '../components/Modal'
 import { ActivityList } from '../components/ActivityList'
-import { AuditLogList } from '../components/AuditLogList'
 import { FriendCharts } from '../components/FriendCharts'
 import { balanceFromResponse, describeBalance, formatBRL, round2 } from '../lib/balance'
 import { todayLocalISODate } from '../lib/date'
 import { exportFriendActivityCsv } from '../lib/csvExport'
 import { normalizeForSearch } from '../lib/text'
 import * as api from '../lib/api'
-import type { ActivityItem, AuditLogEntry, FriendBalance } from '../types'
+import type { ActivityItem, FriendBalance } from '../types'
 import type { LayoutContext } from './layoutContext'
 
-type Tab = 'historico' | 'atividades' | 'graficos'
+type Tab = 'historico' | 'graficos'
 
 export function FriendDetail() {
   const { friendId } = useParams<{ friendId: string }>()
   const { openAddExpense } = useOutletContext<LayoutContext>()
   const [tab, setTab] = useState<Tab>('historico')
   const [historySearch, setHistorySearch] = useState('')
-  const [auditLog, setAuditLog] = useState<AuditLogEntry[] | null>(null)
-  const [auditLoading, setAuditLoading] = useState(false)
-  const [auditError, setAuditError] = useState<string | null>(null)
   const [confirmingSettle, setConfirmingSettle] = useState(false)
   const [settlePreview, setSettlePreview] = useState<FriendBalance | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -72,22 +68,6 @@ export function FriendDetail() {
       (item) => item.kind === 'expense' && normalizeForSearch(item.data.description).includes(q),
     )
   }, [activity, historySearch])
-
-  useEffect(() => {
-    setAuditLog(null)
-    setAuditError(null)
-  }, [friendId, expenses, settlements])
-
-  useEffect(() => {
-    if (tab !== 'atividades' || !friendId || auditLog !== null || auditLoading) return
-    setAuditLoading(true)
-    setAuditError(null)
-    api
-      .fetchActivityLog(friendId)
-      .then(setAuditLog)
-      .catch((err) => setAuditError(err instanceof Error ? err.message : 'Erro ao buscar atividades.'))
-      .finally(() => setAuditLoading(false))
-  }, [tab, friendId, auditLog, auditLoading])
 
   if (!friends.length) return null
   if (!friend || !friendId) return <Navigate to="/" replace />
@@ -144,6 +124,13 @@ export function FriendDetail() {
 
   return (
     <div className="space-y-6">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-[#6b6375] hover:text-[#12251f] dark:text-gray-400 dark:hover:text-white"
+      >
+        <ArrowLeft size={16} /> Voltar
+      </Link>
+
       <Card className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Avatar
@@ -208,17 +195,12 @@ export function FriendDetail() {
       <div>
         <div className="mb-2 flex items-center justify-between px-1">
           <h2 className="text-sm font-semibold text-[#12251f] dark:text-white">
-            {tab === 'historico'
-              ? `Histórico com ${firstName}`
-              : tab === 'atividades'
-                ? `Atividades com ${firstName}`
-                : `Gráficos de ${firstName}`}
+            {tab === 'historico' ? `Histórico com ${firstName}` : `Gráficos de ${firstName}`}
           </h2>
           <div className="flex gap-1">
             {(
               [
                 { value: 'historico' as const, label: 'Histórico' },
-                { value: 'atividades' as const, label: 'Atividades' },
                 { value: 'graficos' as const, label: 'Gráficos' },
               ]
             ).map((opt) => (
@@ -252,27 +234,15 @@ export function FriendDetail() {
           <FriendCharts friendId={friendId} expenses={friendExpenses} />
         ) : (
           <Card className="overflow-hidden">
-            {tab === 'historico' ? (
-              <ActivityList
-                items={filteredActivity}
-                friendsById={{ [friend.id]: friend }}
-                emptyMessage={
-                  historySearch
-                    ? `Nenhuma despesa encontrada para "${historySearch}".`
-                    : `Nenhuma despesa com ${firstName} ainda.`
-                }
-              />
-            ) : auditLoading ? (
-              <p className="px-5 py-10 text-center text-sm text-[#8a8593]">Carregando atividades...</p>
-            ) : auditError ? (
-              <p className="px-5 py-10 text-center text-sm text-owe-600">{auditError}</p>
-            ) : (
-              <AuditLogList
-                entries={auditLog ?? []}
-                friendsById={{ [friend.id]: friend }}
-                emptyMessage={`Nenhuma atividade com ${firstName} ainda.`}
-              />
-            )}
+            <ActivityList
+              items={filteredActivity}
+              friendsById={{ [friend.id]: friend }}
+              emptyMessage={
+                historySearch
+                  ? `Nenhuma despesa encontrada para "${historySearch}".`
+                  : `Nenhuma despesa com ${firstName} ainda.`
+              }
+            />
           </Card>
         )}
       </div>
