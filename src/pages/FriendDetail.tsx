@@ -1,19 +1,20 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useOutletContext, useParams } from 'react-router-dom'
-import { ArrowLeft, Plus, HandCoins, Download, Search } from 'lucide-react'
+import { ArrowLeft, Plus, HandCoins, Download, Search, SlidersHorizontal, X } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { Card } from '../components/Card'
 import { Avatar } from '../components/Avatar'
 import { Button } from '../components/Button'
 import { Modal } from '../components/Modal'
-import { ActivityList } from '../components/ActivityList'
+import { ActivityList, itemDate } from '../components/ActivityList'
 import { FriendCharts } from '../components/FriendCharts'
+import { CATEGORY_OPTIONS, CATEGORY_LABELS, CategoryIcon } from '../components/CategoryIcon'
 import { balanceFromResponse, describeBalance, formatBRL, round2 } from '../lib/balance'
 import { todayLocalISODate } from '../lib/date'
 import { exportFriendActivityCsv } from '../lib/csvExport'
 import { normalizeForSearch } from '../lib/text'
 import * as api from '../lib/api'
-import type { ActivityItem, FriendBalance } from '../types'
+import type { ActivityItem, ExpenseCategory, FriendBalance } from '../types'
 import type { LayoutContext } from './layoutContext'
 
 type Tab = 'historico' | 'graficos'
@@ -23,6 +24,12 @@ export function FriendDetail() {
   const { openAddExpense } = useOutletContext<LayoutContext>()
   const [tab, setTab] = useState<Tab>('historico')
   const [historySearch, setHistorySearch] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [typeFilter, setTypeFilter] = useState<ExpenseCategory | 'settlements' | null>(null)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [amountMinStr, setAmountMinStr] = useState('')
+  const [amountMaxStr, setAmountMaxStr] = useState('')
   const [confirmingSettle, setConfirmingSettle] = useState(false)
   const [settlePreview, setSettlePreview] = useState<FriendBalance | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -61,13 +68,42 @@ export function FriendDetail() {
     [friendExpenses, friendSettlements],
   )
 
+  const openExpenseDates = activity
+    .filter((i): i is Extract<ActivityItem, { kind: 'expense' }> => i.kind === 'expense' && !i.data.settled)
+    .map(itemDate)
+  const recentSettlementCutoff = openExpenseDates.length > 0 ? Math.min(...openExpenseDates) : null
+
+  const activeFilterCount =
+    (typeFilter ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0) + (amountMinStr ? 1 : 0) + (amountMaxStr ? 1 : 0)
+  const hasAnyFilter = activeFilterCount > 0 || historySearch.trim() !== ''
+
+  function clearFilters() {
+    setTypeFilter(null)
+    setDateFrom('')
+    setDateTo('')
+    setAmountMinStr('')
+    setAmountMaxStr('')
+  }
+
   const filteredActivity = useMemo(() => {
     const q = normalizeForSearch(historySearch.trim())
-    if (!q) return activity
-    return activity.filter(
-      (item) => item.kind === 'expense' && normalizeForSearch(item.data.description).includes(q),
-    )
-  }, [activity, historySearch])
+    const min = amountMinStr.trim() ? parseFloat(amountMinStr.replace(',', '.')) : null
+    const max = amountMaxStr.trim() ? parseFloat(amountMaxStr.replace(',', '.')) : null
+
+    return activity.filter((item) => {
+      if (dateFrom && item.data.date < dateFrom) return false
+      if (dateTo && item.data.date > dateTo) return false
+      if (min !== null && !Number.isNaN(min) && item.data.amount < min) return false
+      if (max !== null && !Number.isNaN(max) && item.data.amount > max) return false
+      if (typeFilter === 'settlements') return item.kind === 'settlement'
+      if (q || typeFilter) {
+        if (item.kind !== 'expense') return false
+        if (q && !normalizeForSearch(item.data.description).includes(q)) return false
+        if (typeFilter && item.data.category !== typeFilter) return false
+      }
+      return true
+    })
+  }, [activity, historySearch, typeFilter, dateFrom, dateTo, amountMinStr, amountMaxStr])
 
   if (!friends.length) return null
   if (!friend || !friendId) return <Navigate to="/" replace />
@@ -220,14 +256,140 @@ export function FriendDetail() {
           </div>
         </div>
         {tab === 'historico' && (
-          <div className="mb-3 flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 dark:border-white/15 dark:bg-white/5">
-            <Search size={15} className="shrink-0 text-[#8a8593]" />
-            <input
-              value={historySearch}
-              onChange={(e) => setHistorySearch(e.target.value)}
-              placeholder="Buscar despesa por nome..."
-              className="w-full bg-transparent text-sm text-[#12251f] outline-none placeholder:text-[#8a8593] dark:text-white"
-            />
+          <div className="mb-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-1 items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 dark:border-white/15 dark:bg-white/5">
+                <Search size={15} className="shrink-0 text-[#8a8593]" />
+                <input
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  placeholder="Buscar despesa por nome..."
+                  className="w-full bg-transparent text-sm text-[#12251f] outline-none placeholder:text-[#8a8593] dark:text-white"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((v) => !v)}
+                className={`relative flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                  filtersOpen || activeFilterCount > 0
+                    ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-200'
+                    : 'border-black/10 bg-white text-[#4b4655] hover:bg-black/[0.03] dark:border-white/15 dark:bg-white/5 dark:text-gray-300'
+                }`}
+              >
+                <SlidersHorizontal size={15} />
+                <span className="hidden sm:inline">Filtros</span>
+                {activeFilterCount > 0 && (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-semibold text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {filtersOpen && (
+              <div className="space-y-3 rounded-xl border border-black/10 bg-white p-3 dark:border-white/15 dark:bg-white/5">
+                <div>
+                  <p className="mb-1.5 text-xs font-medium text-[#6b6375] dark:text-gray-400">Categoria</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setTypeFilter(null)}
+                      className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                        typeFilter === null
+                          ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-200'
+                          : 'border-black/10 text-[#4b4655] hover:bg-black/[0.03] dark:border-white/15 dark:text-gray-300'
+                      }`}
+                    >
+                      Todas
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTypeFilter((prev) => (prev === 'settlements' ? null : 'settlements'))}
+                      className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                        typeFilter === 'settlements'
+                          ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-200'
+                          : 'border-black/10 text-[#4b4655] hover:bg-black/[0.03] dark:border-white/15 dark:text-gray-300'
+                      }`}
+                    >
+                      <HandCoins className="h-3.5 w-3.5" />
+                      Pagamentos
+                    </button>
+                    {CATEGORY_OPTIONS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setTypeFilter((prev) => (prev === c ? null : c))}
+                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                          typeFilter === c
+                            ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-200'
+                            : 'border-black/10 text-[#4b4655] hover:bg-black/[0.03] dark:border-white/15 dark:text-gray-300'
+                        }`}
+                      >
+                        <CategoryIcon category={c} className="h-3.5 w-3.5" />
+                        {CATEGORY_LABELS[c]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-[#6b6375] dark:text-gray-400">De</p>
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="w-full rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-sm text-[#12251f] outline-none focus:border-brand-400 dark:border-white/15 dark:bg-white/5 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-[#6b6375] dark:text-gray-400">Até</p>
+                    <input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="w-full rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-sm text-[#12251f] outline-none focus:border-brand-400 dark:border-white/15 dark:bg-white/5 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-[#6b6375] dark:text-gray-400">Valor mínimo</p>
+                    <div className="flex items-center gap-1 rounded-lg border border-black/10 bg-white px-2.5 py-1.5 dark:border-white/15 dark:bg-white/5">
+                      <span className="text-xs text-[#8a8593]">R$</span>
+                      <input
+                        inputMode="decimal"
+                        value={amountMinStr}
+                        onChange={(e) => setAmountMinStr(e.target.value)}
+                        placeholder="0,00"
+                        className="w-full bg-transparent text-sm text-[#12251f] outline-none placeholder:text-[#8a8593] dark:text-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-1.5 text-xs font-medium text-[#6b6375] dark:text-gray-400">Valor máximo</p>
+                    <div className="flex items-center gap-1 rounded-lg border border-black/10 bg-white px-2.5 py-1.5 dark:border-white/15 dark:bg-white/5">
+                      <span className="text-xs text-[#8a8593]">R$</span>
+                      <input
+                        inputMode="decimal"
+                        value={amountMaxStr}
+                        onChange={(e) => setAmountMaxStr(e.target.value)}
+                        placeholder="0,00"
+                        className="w-full bg-transparent text-sm text-[#12251f] outline-none placeholder:text-[#8a8593] dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {activeFilterCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline dark:text-brand-300"
+                  >
+                    <X size={12} /> Limpar filtros
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
         {tab === 'graficos' ? (
@@ -237,9 +399,12 @@ export function FriendDetail() {
             <ActivityList
               items={filteredActivity}
               friendsById={{ [friend.id]: friend }}
+              recentSettlementCutoff={recentSettlementCutoff}
               emptyMessage={
-                historySearch
-                  ? `Nenhuma despesa encontrada para "${historySearch}".`
+                hasAnyFilter
+                  ? historySearch
+                    ? `Nenhuma despesa encontrada para "${historySearch}".`
+                    : 'Nenhuma despesa encontrada para os filtros selecionados.'
                   : `Nenhuma despesa com ${firstName} ainda.`
               }
             />

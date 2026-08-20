@@ -9,7 +9,7 @@ import { ExpenseDetailModal } from './ExpenseDetailModal'
 import { useAppStore } from '../store/useAppStore'
 import { parseLocalDate } from '../lib/date'
 
-function itemDate(item: ActivityItem): number {
+export function itemDate(item: ActivityItem): number {
   return item.kind === 'expense'
     ? new Date(item.data.createdAt).getTime()
     : parseLocalDate(item.data.date).getTime()
@@ -43,10 +43,19 @@ export function ActivityList({
   items,
   friendsById,
   emptyMessage = 'Nenhuma atividade ainda.',
+  recentSettlementCutoff: cutoffOverride,
 }: {
   items: ActivityItem[]
   friendsById: Record<string, Friend>
   emptyMessage?: string
+  /**
+   * Cutoff to classify settlements as open/closed (see isOpenItem below).
+   * Pass this in whenever `items` is a filtered subset of the friend's full
+   * activity — computing it from the filtered list would make a settlement's
+   * open/closed status depend on which filters happen to be active. Falls
+   * back to computing it from `items` when omitted (unfiltered callers).
+   */
+  recentSettlementCutoff?: number | null
 }) {
   const [showSettled, setShowSettled] = useState(false)
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null)
@@ -56,7 +65,12 @@ export function ActivityList({
   const openExpenseDates = items
     .filter((i): i is Extract<ActivityItem, { kind: 'expense' }> => i.kind === 'expense' && !i.data.settled)
     .map(itemDate)
-  const recentSettlementCutoff = openExpenseDates.length > 0 ? Math.min(...openExpenseDates) : null
+  const recentSettlementCutoff =
+    cutoffOverride !== undefined
+      ? cutoffOverride
+      : openExpenseDates.length > 0
+        ? Math.min(...openExpenseDates)
+        : null
 
   const sorted = [...items].sort((a, b) => itemDate(b) - itemDate(a))
   const open = sorted.filter((i) => isOpenItem(i, recentSettlementCutoff))
