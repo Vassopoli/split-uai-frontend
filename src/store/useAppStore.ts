@@ -39,7 +39,9 @@ interface AppState {
   acceptInvite: (inviteId: string) => Promise<void>
   declineInvite: (inviteId: string) => Promise<void>
   setUnreadActivityCount: (count: number) => void
-  markActivityRead: () => Promise<void>
+  /** Marca o feed como lido e devolve o last_read_at anterior (RFC3339), pra
+   *  quem chamou saber quais entradas já carregadas eram as não lidas. */
+  markActivityRead: () => Promise<string>
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -175,7 +177,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setUnreadActivityCount: (count) => set({ unreadActivityCount: count }),
 
   markActivityRead: async () => {
-    await api.markActivityLogRead()
+    const previousLastReadAt = await api.markActivityLogRead()
     set({ unreadActivityCount: 0 })
+    return previousLastReadAt
   },
 }))

@@ -111,8 +111,11 @@ export async function fetchUnreadActivityCount(): Promise<number> {
   return count
 }
 
-export async function markActivityLogRead(): Promise<void> {
-  await request<void>('/activity-log/read', { method: 'POST' })
+export async function markActivityLogRead(): Promise<string> {
+  const { previousLastReadAt } = await request<{ previousLastReadAt: string }>('/activity-log/read', {
+    method: 'POST',
+  })
+  return previousLastReadAt
 }
 
 export interface CreateExpenseInput {

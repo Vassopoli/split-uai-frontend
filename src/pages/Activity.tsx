@@ -14,6 +14,11 @@ export function Activity() {
   const [entries, setEntries] = useState<AuditLogEntry[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Cursor de leitura de antes dessa visita, capturado uma única vez ao abrir
+  // a aba. Usado só pra destacar visualmente quais entradas eram as não
+  // lidas — o badge já zera na hora, mas o destaque fica até o usuário sair
+  // da aba (não queremos que ele suma antes do usuário conseguir ler).
+  const [unreadCutoff, setUnreadCutoff] = useState<string | null>(null)
 
   const friendsById = useMemo(
     () => Object.fromEntries(friends.map((f) => [f.id, f])),
@@ -21,11 +26,14 @@ export function Activity() {
   )
   const selectedFriend = selectedFriendId ? friendsById[selectedFriendId] : null
 
-  // Zera o badge assim que a aba abre, sem esperar o próximo poll de 30s.
+  // Zera o badge assim que a aba abre, sem esperar o próximo poll de 30s, e
+  // guarda o cursor anterior pra destacar as entradas que eram não lidas.
   useEffect(() => {
-    markActivityRead().catch(() => {
-      // best-effort — se falhar, o próximo poll tenta de novo
-    })
+    markActivityRead()
+      .then(setUnreadCutoff)
+      .catch(() => {
+        // best-effort — se falhar, o próximo poll tenta de novo
+      })
   }, [markActivityRead])
 
   useEffect(() => {
@@ -72,6 +80,7 @@ export function Activity() {
           <AuditLogList
             entries={entries ?? []}
             friendsById={friendsById}
+            unreadCutoff={unreadCutoff}
             emptyMessage={
               selectedFriend
                 ? `Nenhuma atividade com ${selectedFriend.name.split(' ')[0]} ainda.`

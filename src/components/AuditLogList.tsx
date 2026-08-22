@@ -64,16 +64,28 @@ const ACTION_META: Record<
   deleted: { icon: Trash2, iconClass: 'bg-owe-50 text-owe-600', verb: 'excluiu' },
 }
 
-function AuditRow({ entry, friend }: { entry: AuditLogEntry; friend: Friend }) {
+function AuditRow({ entry, friend, unread }: { entry: AuditLogEntry; friend: Friend; unread: boolean }) {
   const firstName = friend.name.split(' ')[0]
   const actorName = entry.actor === 'me' ? 'Você' : firstName
   const { icon: Icon, iconClass, verb } = ACTION_META[entry.action]
   const noun = entry.entityType === 'expense' ? 'uma despesa' : 'um acerto'
 
   return (
-    <div className="flex items-start gap-4 px-4 py-3.5 sm:px-5">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconClass}`}>
-        <Icon className="h-5 w-5" strokeWidth={2} />
+    <div
+      className={`flex items-start gap-4 px-4 py-3.5 sm:px-5 ${
+        unread ? 'bg-owe-50/60 dark:bg-owe-500/10' : ''
+      }`}
+    >
+      <div className="relative shrink-0">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${iconClass}`}>
+          <Icon className="h-5 w-5" strokeWidth={2} />
+        </div>
+        {unread && (
+          <span
+            className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-owe-500 ring-2 ring-white dark:ring-[#1a1621]"
+            title="Não lida"
+          />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm text-[#12251f] dark:text-white">
@@ -108,12 +120,18 @@ function AuditRow({ entry, friend }: { entry: AuditLogEntry; friend: Friend }) {
 export function AuditLogList({
   entries,
   friendsById,
+  unreadCutoff = null,
   emptyMessage = 'Nenhuma atividade registrada ainda.',
 }: {
   entries: AuditLogEntry[]
   friendsById: Record<string, Friend>
+  /** last_read_at de antes dessa visita (RFC3339). Entradas de amigos depois
+   *  desse instante são destacadas como não lidas — ações do próprio usuário
+   *  nunca contam, no mesmo critério do backend pro badge. */
+  unreadCutoff?: string | null
   emptyMessage?: string
 }) {
+  const cutoffMs = unreadCutoff ? new Date(unreadCutoff).getTime() : null
   if (entries.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 px-5 py-14 text-center text-[#8a8593]">
@@ -145,7 +163,8 @@ export function AuditLogList({
         </div>,
       )
     }
-    nodes.push(<AuditRow key={entry.id} entry={entry} friend={friend} />)
+    const unread = entry.actor === 'friend' && cutoffMs !== null && ts > cutoffMs
+    nodes.push(<AuditRow key={entry.id} entry={entry} friend={friend} unread={unread} />)
   }
 
   return <div className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">{nodes}</div>
