@@ -204,7 +204,7 @@ export interface ScanReceiptResult {
 export type ScanReceiptOutcome =
   | { status: 'ok'; data: ScanReceiptResult }
   | { status: 'unreadable' }
-  | { status: 'rate_limited'; retryAfterSeconds: number }
+  | { status: 'rate_limited'; retryAfterSeconds: number; message: string }
 
 /**
  * Multipart upload, so it can't go through request() (no JSON Content-Type,
@@ -226,7 +226,17 @@ export async function scanReceipt(receipt: Blob): Promise<ScanReceiptOutcome> {
   if (res.status === 422) return { status: 'unreadable' }
   if (res.status === 429) {
     const retryAfterSeconds = Number(res.headers.get('Retry-After')) || 600
-    return { status: 'rate_limited', retryAfterSeconds }
+    let message: string | undefined
+    try {
+      message = ((await res.json()) as ApiErrorBody).error?.message
+    } catch {
+      // resposta não era JSON
+    }
+    return {
+      status: 'rate_limited',
+      retryAfterSeconds,
+      message: message ?? 'Você já escaneou uma nota há pouco, tente de novo em alguns minutos.',
+    }
   }
 
   if (!res.ok) {

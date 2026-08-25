@@ -9,7 +9,7 @@ type Status =
   | { kind: 'idle' }
   | { kind: 'processing' }
   | { kind: 'unreadable' }
-  | { kind: 'rate_limited'; retryAfterSeconds: number }
+  | { kind: 'rate_limited'; message: string }
   | { kind: 'error'; message: string }
 
 export function ScanReceiptModal({
@@ -42,7 +42,7 @@ export function ScanReceiptModal({
         setStatus({ kind: 'unreadable' })
         return
       }
-      setStatus({ kind: 'rate_limited', retryAfterSeconds: outcome.retryAfterSeconds })
+      setStatus({ kind: 'rate_limited', message: outcome.message })
     } catch (err) {
       setStatus({
         kind: 'error',
@@ -111,10 +111,7 @@ export function ScanReceiptModal({
         {status.kind === 'rate_limited' && (
           <div className="flex flex-col items-center gap-3 py-2 text-center">
             <TriangleAlert size={24} className="text-amber-500" />
-            <p className="text-sm text-[#4b4655] dark:text-gray-300">
-              Você já escaneou uma nota há pouco, tente de novo em{' '}
-              {formatRetryAfter(status.retryAfterSeconds)}.
-            </p>
+            <p className="text-sm text-[#4b4655] dark:text-gray-300">{status.message}</p>
             <Button variant="secondary" onClick={onManualFallback} type="button">
               Preencher manualmente
             </Button>
@@ -163,9 +160,4 @@ export function ScanReceiptModal({
       </div>
     </Modal>
   )
-}
-
-function formatRetryAfter(seconds: number): string {
-  const minutes = Math.ceil(seconds / 60)
-  return minutes <= 1 ? 'cerca de 1 minuto' : `cerca de ${minutes} minutos`
 }
