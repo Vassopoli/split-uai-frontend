@@ -10,9 +10,7 @@ import { useAppStore } from '../store/useAppStore'
 import { parseLocalDate } from '../lib/date'
 
 export function itemDate(item: ActivityItem): number {
-  return item.kind === 'expense'
-    ? new Date(item.data.createdAt).getTime()
-    : parseLocalDate(item.data.date).getTime()
+  return parseLocalDate(item.data.date).getTime()
 }
 
 function monthLabel(timestamp: number): string {
@@ -72,7 +70,13 @@ export function ActivityList({
         ? Math.min(...openExpenseDates)
         : null
 
-  const sorted = [...items].sort((a, b) => itemDate(b) - itemDate(a))
+  const sorted = [...items].sort((a, b) => {
+    const dateDiff = itemDate(b) - itemDate(a)
+    if (dateDiff !== 0) return dateDiff
+    const aCreated = a.kind === 'expense' ? new Date(a.data.createdAt).getTime() : 0
+    const bCreated = b.kind === 'expense' ? new Date(b.data.createdAt).getTime() : 0
+    return bCreated - aCreated
+  })
   const open = sorted.filter((i) => isOpenItem(i, recentSettlementCutoff))
   const settled = sorted.filter((i) => !isOpenItem(i, recentSettlementCutoff))
 
