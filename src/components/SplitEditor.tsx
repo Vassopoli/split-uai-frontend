@@ -157,13 +157,33 @@ export function SplitEditor({
           </>
         )}
 
-        {!result.valid && amount > 0 && splitType !== 'equal' && (
-          <p className="text-xs text-owe-600">
-            {splitType === 'exact'
-              ? `Os valores devem somar ${formatBRL(amount)}.`
-              : 'As porcentagens devem somar 100%.'}
-          </p>
-        )}
+        {amount > 0 && splitType === 'exact' && (() => {
+          const my = round2(parseFloat(myExact.replace(',', '.')) || 0)
+          const fr = round2(parseFloat(friendExact.replace(',', '.')) || 0)
+          const diff = round2(amount - (my + fr))
+          if (Math.abs(diff) < 0.01) return null
+          return (
+            <p className="text-xs text-owe-600">
+              {diff > 0
+                ? `Faltam ${formatBRL(diff)} para completar ${formatBRL(amount)}.`
+                : `Passou ${formatBRL(Math.abs(diff))} do total de ${formatBRL(amount)}.`}
+            </p>
+          )
+        })()}
+
+        {amount > 0 && splitType === 'percentage' && (() => {
+          const myP = parseFloat(myPct.replace(',', '.')) || 0
+          const frP = parseFloat(friendPct.replace(',', '.')) || 0
+          const diff = round2(100 - (myP + frP))
+          if (Math.abs(diff) < 0.01) return null
+          return (
+            <p className="text-xs text-owe-600">
+              {diff > 0
+                ? `Faltam ${diff}% para completar 100%.`
+                : `Passou ${Math.abs(diff)}% de 100%.`}
+            </p>
+          )
+        })()}
       </div>
     </div>
   )
