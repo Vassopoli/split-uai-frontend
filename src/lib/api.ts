@@ -306,3 +306,23 @@ export async function registerPayment(
     body: JSON.stringify(input),
   })
 }
+
+export interface TelegramStatus {
+  linked: boolean
+  chatId?: string
+}
+
+export async function fetchTelegramStatus(): Promise<TelegramStatus> {
+  return request<TelegramStatus>('/me/telegram')
+}
+
+export async function setTelegramChatId(chatId: string): Promise<void> {
+  await request<{ ok: boolean }>('/me/telegram', {
+    method: 'PUT',
+    body: JSON.stringify({ chatId }),
+  })
+}
+
+export async function disconnectTelegram(): Promise<void> {
+  await request<void>('/me/telegram', { method: 'DELETE' })
+}

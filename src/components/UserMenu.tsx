@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { LogOut } from 'lucide-react'
+import { LogOut, Send } from 'lucide-react'
 import { Avatar } from './Avatar'
+import { TelegramSettingsModal } from './TelegramSettingsModal'
 
 export function UserMenu() {
   const { user, logout } = useAuth0()
   const [open, setOpen] = useState(false)
+  const [telegramModalOpen, setTelegramModalOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -44,6 +46,15 @@ export function UserMenu() {
             )}
           </div>
           <button
+            onClick={() => {
+              setOpen(false)
+              setTelegramModalOpen(true)
+            }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[#4b4655] hover:bg-black/[0.04] dark:text-gray-300 dark:hover:bg-white/[0.06]"
+          >
+            <Send size={15} /> Lembrete por Telegram
+          </button>
+          <button
             onClick={() =>
               logout({ logoutParams: { returnTo: window.location.origin } })
             }
@@ -52,6 +63,10 @@ export function UserMenu() {
             <LogOut size={15} /> Sair
           </button>
         </div>
+      )}
+
+      {telegramModalOpen && (
+        <TelegramSettingsModal onClose={() => setTelegramModalOpen(false)} />
       )}
     </div>
   )

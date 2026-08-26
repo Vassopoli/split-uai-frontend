@@ -24,5 +24,10 @@ services:
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+      # Lembrete mensal de saldo em aberto via Telegram — opcional, ausente
+      # desativa o job (ver internal/reminder no backend).
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      REMINDER_DAY_OF_MONTH: ${REMINDER_DAY_OF_MONTH:-30}
+      APP_URL: ${APP_URL:-}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
