@@ -326,3 +326,26 @@ export async function setTelegramChatId(chatId: string): Promise<void> {
 export async function disconnectTelegram(): Promise<void> {
   await request<void>('/me/telegram', { method: 'DELETE' })
 }
+
+export interface PushStatus {
+  subscribed: boolean
+}
+
+export async function fetchPushStatus(): Promise<PushStatus> {
+  return request<PushStatus>('/me/push-subscriptions')
+}
+
+/** `PushSubscriptionJSON` do browser — repassado como veio, o backend usa endpoint/keys direto na lib de envio (web-push). */
+export async function subscribePush(subscription: PushSubscriptionJSON): Promise<void> {
+  await request<{ ok: boolean }>('/me/push-subscriptions', {
+    method: 'POST',
+    body: JSON.stringify(subscription),
+  })
+}
+
+export async function unsubscribePush(endpoint: string): Promise<void> {
+  await request<void>('/me/push-subscriptions', {
+    method: 'DELETE',
+    body: JSON.stringify({ endpoint }),
+  })
+}
