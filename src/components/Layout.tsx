@@ -5,6 +5,7 @@ import { useAppStore } from '../store/useAppStore'
 import { useUnreadActivityPolling } from '../hooks/useUnreadActivityPolling'
 import { Button } from './Button'
 import { UserMenu } from './UserMenu'
+import { PushPermissionBanner } from './PushPermissionBanner'
 import type { LayoutContext } from '../pages/layoutContext'
 
 export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
@@ -65,6 +66,8 @@ export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
           </span>
         </TabLink>
       </nav>
+
+      <PushPermissionBanner />
 
       <main className="flex-1 py-6">
         <Outlet context={{ openAddExpense, openScanReceipt } satisfies LayoutContext} />
