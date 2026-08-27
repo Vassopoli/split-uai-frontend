@@ -24,9 +24,17 @@ services:
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+      # Segunda tentativa de scan de nota fiscal quando GEMINI_MODEL falha —
+      # opcional, ausente usa o mesmo modelo de GEMINI_MODEL (ver
+      # internal/receiptscan no backend).
+      GEMINI_FALLBACK_MODEL: ${GEMINI_FALLBACK_MODEL:-}
       # Lembrete mensal de saldo em aberto via Telegram — opcional, ausente
       # desativa o job (ver internal/reminder no backend).
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      # Relatório de cada scan de nota fiscal (grátis bastou / precisou do
+      # fallback / falhou) pro chat de análise do operador — opcional,
+      # ausente desativa o relatório (ver internal/receiptscan.Reporter).
+      TELEGRAM_ANALYTICS_CHAT_ID: ${TELEGRAM_ANALYTICS_CHAT_ID:-}
       REMINDER_DAY_OF_MONTH: ${REMINDER_DAY_OF_MONTH:-30}
       APP_URL: ${APP_URL:-}
       # Web Push (ver "Notificações push" em docs/backend-api-contract.md).
