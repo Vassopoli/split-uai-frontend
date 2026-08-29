@@ -37,7 +37,8 @@ services:
       TELEGRAM_ANALYTICS_CHAT_ID: ${TELEGRAM_ANALYTICS_CHAT_ID:-}
       REMINDER_DAY_OF_MONTH: ${REMINDER_DAY_OF_MONTH:-30}
       APP_URL: ${APP_URL:-}
-      # Web Push (ver "Notificações push" em docs/backend-api-contract.md).
+      # Web Push (ver "Notificações push" em
+      # ../split-uai-docs/frontend/backend-api-contract.md, fora deste repo).
       # A chave pública é a mesma embutida no build do frontend
       # (VITE_VAPID_PUBLIC_KEY no workflow) — ausente aqui desativa o envio.
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}

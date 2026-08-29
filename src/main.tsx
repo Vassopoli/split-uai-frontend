@@ -14,7 +14,8 @@ createRoot(document.getElementById('root')!).render(
         redirect_uri: window.location.origin,
         // Sem audience configurado, o login continua funcionando, mas o
         // token retornado por getAccessTokenSilently() não serve pra
-        // autenticar chamadas ao backend (ver docs/backend-api-contract.md).
+        // autenticar chamadas ao backend (ver
+        // ../../split-uai-docs/frontend/backend-api-contract.md, fora deste repo).
         ...(import.meta.env.VITE_AUTH0_AUDIENCE
           ? { audience: import.meta.env.VITE_AUTH0_AUDIENCE }
           : {}),

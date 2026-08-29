@@ -3,7 +3,8 @@ import { getAccessToken } from './authToken'
 
 /**
  * Real API client — talks to the backend described in
- * docs/backend-api-contract.md. Every exported function here keeps the same
+ * ../../../split-uai-docs/frontend/backend-api-contract.md (outside this
+ * repo, not committed here). Every exported function here keeps the same
  * signature the mock version used to have, so callers (the Zustand store)
  * didn't need to change.
  */

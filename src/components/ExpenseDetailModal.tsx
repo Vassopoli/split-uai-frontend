@@ -61,6 +61,7 @@ export function ExpenseDetailModal({
   })
 
   const amount = useMemo(() => parseFloat(amountStr.replace(',', '.')) || 0, [amountStr])
+  const isItemizing = split.itemizedAmount !== undefined
   const canSubmit = description.trim().length > 0 && amount > 0 && split.valid && !submitting
 
   const iOwe = expense.paidBy === 'friend'
@@ -146,13 +147,19 @@ export function ExpenseDetailModal({
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-[#6b6375] dark:text-gray-400">
-              Observações <span className="font-normal text-[#8a8593]">(opcional)</span>
+              Observações{' '}
+              <span className="font-normal text-[#8a8593]">
+                {isItemizing ? '(gerado a partir dos itens)' : '(opcional)'}
+              </span>
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={notes.includes('\n') ? 4 : 1}
-              className="w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm text-[#12251f] outline-none focus:border-brand-400 dark:border-white/15 dark:bg-white/5 dark:text-white"
+              readOnly={isItemizing}
+              className={`w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm text-[#12251f] outline-none focus:border-brand-400 dark:border-white/15 dark:bg-white/5 dark:text-white ${
+                isItemizing ? 'opacity-60' : ''
+              }`}
             />
           </div>
 
@@ -160,13 +167,21 @@ export function ExpenseDetailModal({
             <div>
               <label className="mb-1.5 block text-xs font-medium text-[#6b6375] dark:text-gray-400">
                 Valor total
+                {isItemizing && (
+                  <span className="font-normal text-[#8a8593]"> (soma dos itens)</span>
+                )}
               </label>
-              <div className="flex items-center gap-1 rounded-xl border border-black/10 bg-white px-3 py-2.5 dark:border-white/15 dark:bg-white/5">
+              <div
+                className={`flex items-center gap-1 rounded-xl border border-black/10 bg-white px-3 py-2.5 dark:border-white/15 dark:bg-white/5 ${
+                  isItemizing ? 'opacity-60' : ''
+                }`}
+              >
                 <span className="text-sm text-[#8a8593]">R$</span>
                 <input
                   inputMode="decimal"
                   value={amountStr}
                   onChange={(e) => setAmountStr(e.target.value)}
+                  readOnly={isItemizing}
                   className="w-full bg-transparent text-sm text-[#12251f] outline-none dark:text-white"
                 />
               </div>
@@ -258,7 +273,13 @@ export function ExpenseDetailModal({
             <SplitEditor
               amount={amount}
               friend={friend}
-              onChange={setSplit}
+              onChange={(result) => {
+                setSplit(result)
+                if (result.itemizedAmount !== undefined) {
+                  setAmountStr(result.itemizedAmount.toFixed(2).replace('.', ','))
+                  setNotes(result.itemizedNotes ?? '')
+                }
+              }}
               initial={{
                 splitType: expense.splitType,
                 myShare: expense.myShare,

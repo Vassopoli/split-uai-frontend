@@ -1,10 +1,15 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    css: true,
+  },
   // Sem isso, o Vite bloqueia qualquer Host header que não seja localhost ou
   // um IP que ele mesmo detectou (proteção contra DNS rebinding) — inclusive
   // o hostname MagicDNS do Tailscale (*.ts.net). Como o servidor só é
