@@ -301,7 +301,7 @@ export async function registerPayment(
   friendId: string,
   input: CreatePaymentInput,
 ): Promise<Settlement> {
-  return request<Settlement>(`/friends/${encodeURIComponent(friendId)}/payments`, {
+  return request<Settlement>(`/friends/${encodeURIComponent(friendId)}/settle/partial`, {
     method: 'POST',
     body: JSON.stringify(input),
   })
