@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -27,5 +30,17 @@ jobs:
       - name: Type check
         run: npx tsc -b
 
-      - name: Test
-        run: npm test
+      - name: Test with coverage
+        run: npm run test:coverage
+
+      - name: Update coverage badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          npm run coverage:badge
+          if ! git diff --quiet -- .github/badges/coverage.svg; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .github/badges/coverage.svg
+            git commit -m "Atualiza badge de cobertura de testes [skip ci]"
+            git push
+          fi

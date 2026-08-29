@@ -9,6 +9,15 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     css: true,
+    coverage: {
+      // Sem isso, o relatório só conta arquivos tocados por algum teste —
+      // um único teste cobrindo 3 arquivos aparecia como "83% do projeto".
+      // `include`/`all` força a contagem de todo o src/, com os não
+      // testados aparecendo (corretamente) como 0%.
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/**/*.d.ts', 'src/main.tsx'],
+      reporter: ['text', 'html', 'clover', 'json', 'json-summary'],
+    },
   },
   // Sem isso, o Vite bloqueia qualquer Host header que não seja localhost ou
   // um IP que ele mesmo detectou (proteção contra DNS rebinding) — inclusive
