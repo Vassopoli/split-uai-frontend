@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { Camera, History, Plus, UserPlus, Wallet } from 'lucide-react'
+import { Bot, Camera, History, Plus, UserPlus, Wallet } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { useUnreadActivityPolling } from '../hooks/useUnreadActivityPolling'
 import { Button } from './Button'
@@ -52,6 +52,12 @@ export function Layout({ openAddExpense, openScanReceipt }: LayoutContext) {
                 {unreadActivityCount > 9 ? '9+' : unreadActivityCount}
               </span>
             )}
+          </span>
+        </TabLink>
+        <TabLink to="/assistant">
+          <span className="flex items-center gap-1.5">
+            <Bot size={15} />
+            Assistente
           </span>
         </TabLink>
         <TabLink to="/invites">

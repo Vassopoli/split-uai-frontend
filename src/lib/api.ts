@@ -350,3 +350,25 @@ export async function unsubscribePush(endpoint: string): Promise<void> {
     body: JSON.stringify({ endpoint }),
   })
 }
+
+export interface AssistantMessage {
+  role: 'user' | 'model'
+  text: string
+}
+
+/**
+ * Chat com IA somente-leitura: consulta despesas, saldos e histórico do
+ * usuário e responde em linguagem natural, mas não cria, edita nem exclui
+ * nada (ver docs/adr do backend). O histórico não é persistido pelo backend —
+ * quem chama reenvia a conversa inteira a cada mensagem.
+ */
+export async function sendAssistantMessage(
+  message: string,
+  history: AssistantMessage[],
+): Promise<string> {
+  const { reply } = await request<{ reply: string }>('/assistant/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, history }),
+  })
+  return reply
+}
