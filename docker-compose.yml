@@ -44,5 +44,17 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@split-uai.app}
+      # Troca só o categorizador de despesas pra um Ollama local — opcional,
+      # ausente mantém Gemini (ver internal/categorize no backend). Se o
+      # Ollama rodar no host (fora deste compose), usar
+      # http://host.docker.internal:11434 — depende do extra_hosts abaixo
+      # pra resolver em host Linux.
+      CATEGORIZE_OLLAMA_URL: ${CATEGORIZE_OLLAMA_URL:-}
+      CATEGORIZE_OLLAMA_MODEL: ${CATEGORIZE_OLLAMA_MODEL:-llama3.1:8b}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+    # host.docker.internal não resolve por padrão em host Linux (diferente de
+    # Docker Desktop no Mac/Windows) — precisa disso pro backend alcançar um
+    # Ollama rodando fora deste compose, no host do Komodo.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
