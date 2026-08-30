@@ -24,6 +24,7 @@ services:
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       # Segunda tentativa de scan de nota fiscal quando GEMINI_MODEL falha —
       # opcional, ausente usa o mesmo modelo de GEMINI_MODEL (ver
       # internal/receiptscan no backend).
