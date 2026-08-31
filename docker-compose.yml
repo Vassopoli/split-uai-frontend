@@ -7,6 +7,11 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-8081}:80"
+    labels:
+      homepage.group: Containers
+      homepage.name: Split UAI Frontend
+      homepage.icon: docker.png
+      homepage.showStats: "true"
 
   backend:
     # Buildada e publicada pelo workflow do repo split-uai-backend — o
@@ -59,3 +64,8 @@ services:
     # Ollama rodando fora deste compose, no host do Komodo.
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    labels:
+      homepage.group: Containers
+      homepage.name: Split UAI Backend
+      homepage.icon: docker.png
+      homepage.showStats: "true"
