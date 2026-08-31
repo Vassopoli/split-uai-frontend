@@ -109,6 +109,40 @@ describe('load', () => {
   })
 })
 
+describe('refresh', () => {
+  it('is a no-op when nothing has been loaded yet', async () => {
+    await useAppStore.getState().refresh()
+    expect(api.fetchFriends).not.toHaveBeenCalled()
+  })
+
+  it('re-fetches everything and overwrites the store, even while not "loading"', async () => {
+    useAppStore.setState({ loaded: true, friends: [], expenses: [], settlements: [] })
+    vi.mocked(api.fetchFriends).mockResolvedValue([friend])
+    vi.mocked(api.fetchExpenses).mockResolvedValue([expense])
+    vi.mocked(api.fetchSettlements).mockResolvedValue([settlement])
+    vi.mocked(api.fetchFriendInvites).mockResolvedValue({ sent: [], received: [] })
+    vi.mocked(api.fetchFriendBalance).mockResolvedValue({ friendId: 'f1', amount: 20, direction: 'friend_to_me' })
+
+    await useAppStore.getState().refresh()
+
+    const state = useAppStore.getState()
+    expect(state.friends).toEqual([friend])
+    expect(state.expenses).toEqual([expense])
+    expect(state.settlements).toEqual([settlement])
+    expect(state.balances.f1).toEqual({ friendId: 'f1', net: 20 })
+    expect(state.loading).toBe(false)
+  })
+
+  it('fails silently, leaving the previous data in place', async () => {
+    useAppStore.setState({ loaded: true, friends: [friend] })
+    vi.mocked(api.fetchFriends).mockRejectedValue(new Error('offline'))
+
+    await expect(useAppStore.getState().refresh()).resolves.toBeUndefined()
+    expect(useAppStore.getState().friends).toEqual([friend])
+    expect(useAppStore.getState().error).toBeNull()
+  })
+})
+
 describe('addExpense', () => {
   it('prepends the new expense and refreshes the friend balance', async () => {
     vi.mocked(api.createExpense).mockResolvedValue(expense)

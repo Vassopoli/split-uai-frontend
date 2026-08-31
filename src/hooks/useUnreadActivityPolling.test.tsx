@@ -16,7 +16,7 @@ function wrapper(path: string) {
 beforeEach(() => {
   vi.useFakeTimers()
   vi.clearAllMocks()
-  useAppStore.setState({ unreadActivityCount: 0 })
+  useAppStore.setState({ unreadActivityCount: 0, loaded: false })
   Object.defineProperty(document, 'hidden', { value: false, configurable: true })
 })
 
@@ -48,6 +48,40 @@ describe('useUnreadActivityPolling', () => {
 
     expect(api.markActivityLogRead).toHaveBeenCalled()
     expect(useAppStore.getState().unreadActivityCount).toBe(0)
+  })
+
+  it('refreshes the store when a poll finds unread activity, so stale screens pick up the other side\'s changes', async () => {
+    useAppStore.setState({ loaded: true })
+    vi.mocked(api.fetchUnreadActivityCount).mockResolvedValue(1)
+    const friend = { id: 'f1', name: 'Bia', initials: 'B', color: '#fff' }
+    vi.mocked(api.fetchFriends).mockResolvedValue([friend])
+    vi.mocked(api.fetchExpenses).mockResolvedValue([])
+    vi.mocked(api.fetchSettlements).mockResolvedValue([])
+    vi.mocked(api.fetchFriendInvites).mockResolvedValue({ sent: [], received: [] })
+    vi.mocked(api.fetchFriendBalance).mockResolvedValue({ friendId: 'f1', amount: 0, direction: 'even' })
+    renderHook(() => useUnreadActivityPolling(), { wrapper: wrapper('/') })
+
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(api.fetchFriends).toHaveBeenCalled()
+    expect(useAppStore.getState().friends).toEqual([friend])
+  })
+
+  it('does not refresh the store when there is no unread activity', async () => {
+    useAppStore.setState({ loaded: true })
+    vi.mocked(api.fetchUnreadActivityCount).mockResolvedValue(0)
+    renderHook(() => useUnreadActivityPolling(), { wrapper: wrapper('/') })
+
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(api.fetchFriends).not.toHaveBeenCalled()
   })
 
   it('skips polling while the tab is hidden', async () => {

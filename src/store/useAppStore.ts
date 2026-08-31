@@ -18,6 +18,25 @@ async function fetchBalance(friendId: string): Promise<FriendBalance> {
   return balanceFromResponse(await api.fetchFriendBalance(friendId))
 }
 
+async function fetchAppData() {
+  const [friends, expenses, settlements, invites] = await Promise.all([
+    api.fetchFriends(),
+    api.fetchExpenses(),
+    api.fetchSettlements(),
+    api.fetchFriendInvites(),
+  ])
+  const balanceEntries = await Promise.all(
+    friends.map(async (f) => [f.id, await fetchBalance(f.id)] as const),
+  )
+  return {
+    friends,
+    expenses,
+    settlements,
+    invites,
+    balances: Object.fromEntries(balanceEntries),
+  }
+}
+
 interface AppState {
   friends: Friend[]
   expenses: Expense[]
@@ -30,6 +49,12 @@ interface AppState {
   unreadActivityCount: number
 
   load: () => Promise<void>
+  /** Refaz o fetch de tudo (amigos, despesas, acertos, saldos) sem passar
+   *  pela guarda de `loaded` — usado pra puxar mudanças feitas pelo outro
+   *  lado (ex: um pagamento que ele registrou) que não chegam via nenhuma
+   *  ação local. Falha em silêncio: é best-effort, chamado em background
+   *  pelo polling de atividades. */
+  refresh: () => Promise<void>
   addExpense: (input: CreateExpenseInput) => Promise<void>
   updateExpense: (expenseId: string, input: UpdateExpenseInput) => Promise<void>
   deleteExpense: (expenseId: string) => Promise<void>
@@ -59,29 +84,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (get().loaded || get().loading) return
     set({ loading: true, error: null })
     try {
-      const [friends, expenses, settlements, invites] = await Promise.all([
-        api.fetchFriends(),
-        api.fetchExpenses(),
-        api.fetchSettlements(),
-        api.fetchFriendInvites(),
-      ])
-      const balanceEntries = await Promise.all(
-        friends.map(async (f) => [f.id, await fetchBalance(f.id)] as const),
-      )
-      set({
-        friends,
-        expenses,
-        settlements,
-        invites,
-        balances: Object.fromEntries(balanceEntries),
-        loading: false,
-        loaded: true,
-      })
+      const data = await fetchAppData()
+      set({ ...data, loading: false, loaded: true })
     } catch (err) {
       set({
         loading: false,
         error: err instanceof Error ? err.message : 'Falha ao carregar dados',
       })
+    }
+  },
+
+  refresh: async () => {
+    if (!get().loaded) return
+    try {
+      set(await fetchAppData())
+    } catch {
+      // best-effort — o próximo poll de atividades tenta de novo
     }
   },
 
