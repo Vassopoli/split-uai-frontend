@@ -95,7 +95,7 @@ describe('SplitEditor — por item', () => {
     expect(result.itemizedAmount).toBeCloseTo(40)
     expect(result.myShare).toBeCloseTo(40)
     expect(result.friendShare).toBeCloseTo(0)
-    expect(denbsp(result.itemizedNotes ?? '')).toBe('Pizza — R$ 40,00 (você)')
+    expect(denbsp(result.itemizedNotes ?? '')).toBe('Pizza — R$ 40,00 (Você)')
   })
 
   it('splits a shared item in half between me and the friend', async () => {
@@ -128,7 +128,7 @@ describe('SplitEditor — por item', () => {
     expect(result.friendShare).toBeCloseTo(10)
     expect(result.valid).toBe(true)
     expect(denbsp(result.itemizedNotes ?? '')).toBe(
-      'Pizza — R$ 40,00 (você)\nUber — R$ 20,00 (dividido)',
+      'Pizza — R$ 40,00 (Você)\nUber — R$ 20,00 (Você, Bia)',
     )
   })
 

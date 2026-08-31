@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useAuth0 } from '@auth0/auth0-react'
 import { Plus, Trash2 } from 'lucide-react'
 import type { SplitType, Friend } from '../types'
 import { formatBRL, round2 } from '../lib/balance'
@@ -53,6 +54,9 @@ export function SplitEditor({
   onChange: (result: SplitResult) => void
   initial?: { splitType: SplitType; myShare: number; friendShare: number }
 }) {
+  const { user } = useAuth0()
+  const myName = (user?.name ?? user?.email ?? 'Você').split(' ')[0]
+
   const [splitType, setSplitType] = useState<TabValue>(initial?.splitType ?? 'equal')
   const [myExact, setMyExact] = useState(initial ? initial.myShare.toFixed(2) : '')
   const [friendExact, setFriendExact] = useState(initial ? initial.friendShare.toFixed(2) : '')
@@ -95,12 +99,13 @@ export function SplitEditor({
         .map((it) => {
           const label = it.label.trim() || 'Item'
           const value = formatBRL(parseFloat(it.amountStr.replace(',', '.')) || 0)
+          const friendName = friend.name.split(' ')[0]
           const owner =
-            it.mine && it.theirs ? 'dividido' : it.mine ? 'você' : it.theirs ? friend.name.split(' ')[0] : '?'
+            it.mine && it.theirs ? `${myName}, ${friendName}` : it.mine ? myName : it.theirs ? friendName : '?'
           return `${label} — ${value} (${owner})`
         })
         .join('\n'),
-    [filledItems, friend.name],
+    [filledItems, friend.name, myName],
   )
 
   const result: SplitResult = useMemo(() => {
